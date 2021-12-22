@@ -17,6 +17,7 @@ from jeec_brain.finders.users_finder import UsersFinder
 
 from applicationinsights.flask.ext import AppInsights
 
+
 csrf = CSRFProtect()
 login_manager = LoginManager()
 
