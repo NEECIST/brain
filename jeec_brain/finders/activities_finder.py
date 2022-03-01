@@ -101,6 +101,11 @@ class ActivitiesFinder():
     @classmethod
     def get_activities_from_event(cls, event):
         return Activities.query.filter((Events.id == event.id) & (Events.id == Activities.event_id) & (Activities.activity_type_id == ActivityTypes.id) & (ActivityTypes.show_in_schedule == True)).order_by(Activities.day, Activities.time).all()
+    
+    @classmethod
+    def get_activities_from_default_event(cls):
+        event = EventsFinder.get_default_event()
+        return Activities.query.filter((Events.default == True) & (Events.id == Activities.event_id) & (Activities.activity_type_id == ActivityTypes.id) & (ActivityTypes.show_in_schedule == True)).order_by(Activities.day, Activities.time).all()
 
     @classmethod
     def get_current_company_activities(cls, company):
