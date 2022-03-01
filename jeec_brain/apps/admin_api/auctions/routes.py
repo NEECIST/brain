@@ -7,6 +7,7 @@ from jeec_brain.handlers.auctions_handler import AuctionsHandler
 from jeec_brain.apps.auth.wrappers import allowed_roles
 from jeec_brain.values.api_error_value import APIErrorValue
 from jeec_brain.schemas.admin_api.auctions.schemas import AuctionPath
+from jeec_brain.schemas.admin_api.schemas import *
 
 from datetime import datetime
 
@@ -15,6 +16,10 @@ from datetime import datetime
 @bp.get('/auctions')
 @allowed_roles(['admin'])
 def auctions_dashboard():
+    """
+    Description: Directs user to "auctions dashboard" and determines what auctions are open at the moment
+    Possible response codes: 200
+    """
     auctions_list = AuctionsFinder.get_all()
 
     for auction in auctions_list:
@@ -36,21 +41,37 @@ def auctions_dashboard():
 @bp.get('/new-auction')
 @allowed_roles(['admin'])
 def add_auction_dashboard():
+    """
+    Description: Directs user to the "add auction" page
+    Possible response codes: 200
+    """
     return render_template('admin/auctions/add_auction.html', error=None)
 
 
 @bp.post('/new-auction')
 @allowed_roles(['admin'])
-def create_auction():
-    name = request.form.get('name')
-    description = request.form.get('description')
-    starting_date = request.form.get('starting_date')
-    closing_date = request.form.get('closing_date')
-    starting_time = request.form.get('starting_time')
-    closing_time = request.form.get('closing_time')
+def create_auction(form: AuctionForm):
+    """
+    Description: Creates a new auction with parameters given by admin user in a form
+    Possible response codes: 200, 302
+    """
+    # name = request.form.get('name')
+    # description = request.form.get('description')
+    # starting_date = request.form.get('starting_date')
+    # closing_date = request.form.get('closing_date')
+    # starting_time = request.form.get('starting_time')
+    # closing_time = request.form.get('closing_time')
+
+    name = form.name
+    description = form.description
+    starting_date = form.starting_date
+    closing_date = form.closing_date
+    starting_time = form.starting_time
+    closing_time = form.closing_time
 
     try:
-        minimum_value = float(request.form.get('minimum_value'))
+        #minimum_value = float(request.form.get('minimum_value'))
+        minimum_value = float(form.minimum_value)
     except:
         return 'Invalid minimum value inserted', 500
 
@@ -58,7 +79,7 @@ def create_auction():
     end = datetime.strptime(closing_date + " " + closing_time,'%d %b %Y, %a %H:%M')
     if start > end:
         return render_template('admin/auctions/add_auction.html', \
-            error="Starting date higher then closing!") 
+            error="Starting date higher than closing!") 
 
     # create new auction
     auction = AuctionsHandler.create_auction(
@@ -81,6 +102,10 @@ def create_auction():
 @bp.get('/auctions/<string:auction_external_id>')
 @allowed_roles(['admin'])
 def get_auction(path: AuctionPath):
+    """
+    Description: Finds auction labeled by id in URL and directs admin user to said auction update page
+    Possible response codes: 200
+    """
     auction = AuctionsFinder.get_auction_by_external_id(path.auction_external_id)
 
     if auction is None:
@@ -94,21 +119,32 @@ def get_auction(path: AuctionPath):
 
 @bp.post('/auctions/<string:auction_external_id>')
 @allowed_roles(['admin'])
-def update_auction(path: AuctionPath):
+def update_auction(path: AuctionPath, form: AuctionForm):
+    """
+    Description: Updates auction labeled by id given in URL with parametes given by admin user in a form
+    Possible response codes: 200, 302, 400, 500
+    """
     auction = AuctionsFinder.get_auction_by_external_id(path.auction_external_id)
 
     if auction is None:
         return APIErrorValue('Couldnt find auction').json(500)
 
-    name = request.form.get('name')
-    description = request.form.get('description')
-    starting_date = request.form.get('starting_date')
-    closing_date = request.form.get('closing_date')
-    starting_time = request.form.get('starting_time')
-    closing_time = request.form.get('closing_time')
+    # name = request.form.get('name')
+    # description = request.form.get('description')
+    # starting_date = request.form.get('starting_date')
+    # closing_date = request.form.get('closing_date')
+    # starting_time = request.form.get('starting_time')
+    # closing_time = request.form.get('closing_time')
+    name = form.name
+    description = form.description
+    starting_date = form.starting_date
+    closing_date = form.closing_date
+    starting_time = form.starting_time
+    closing_time = form.closing_time
 
     try:
-        minimum_value = float(request.form.get('minimum_value'))
+        #minimum_value = float(request.form.get('minimum_value'))
+        minimum_value = float(form.minimum_value)
     except:
         return APIErrorValue('Wrong value format input').json(400)
 
@@ -131,9 +167,13 @@ def update_auction(path: AuctionPath):
     return redirect(url_for('admin_api.auctions_dashboard'))
 
 
-@bp.get('/auctions/<string:auction_external_id>/delete')
+@bp.get('/auctions/<string:auction_external_id>/delete', responses={'500': APIError})
 @allowed_roles(['admin'])
 def delete_auction(path: AuctionPath):
+    """
+    Description: Deletes auction labeled by id given in URL
+    Possible response codes: 200, 302, 500
+    """
     auction = AuctionsFinder.get_auction_by_external_id(path.auction_external_id)
 
     if auction is None:
@@ -147,9 +187,13 @@ def delete_auction(path: AuctionPath):
 
 
 # Members management
-@bp.get('/auctions/<string:auction_external_id>/participants')
+@bp.get('/auctions/<string:auction_external_id>/participants', responses={'400': APIError})
 @allowed_roles(['admin'])
 def auction_participants_dashboard(path: AuctionPath):
+    """
+    Description: Directs user to auction participants' dashboard of auction labeled by external id
+    Possible response codes: 200, 400
+    """
     auction = AuctionsFinder.get_auction_by_external_id(path.auction_external_id)
 
     if auction is None:
@@ -164,15 +208,20 @@ def auction_participants_dashboard(path: AuctionPath):
     return render_template('admin/auctions/auction_participants_dashboard.html', auction=auction, not_participants=not_participants, error=None)
 
 
-@bp.post('/auctions/<string:auction_external_id>/add-participant')
+@bp.post('/auctions/<string:auction_external_id>/add-participant', responses={'400': APIError})
 @allowed_roles(['admin'])
-def add_auction_participant(path: AuctionPath):
+def add_auction_participant(path: AuctionPath, form:CompanyExternalIdForm):
+    """
+    Description: Adds a company participant (with id given in form filled by admin user) to an auction with id given in URL
+    Possible response codes: 302, 400
+    """
     auction = AuctionsFinder.get_auction_by_external_id(path.auction_external_id)
 
     if auction is None:
         return APIErrorValue('Couldnt find auction').json(400)
 
-    company_external_id = request.form.get('company_external_id')
+    #company_external_id = request.form.get('company_external_id')
+    company_external_id = form.company_external_id
 
     if company_external_id is None:
         return redirect(url_for('admin_api.auction_participants_dashboard', auction_external_id=path.auction_external_id))

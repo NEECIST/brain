@@ -10,6 +10,7 @@ from jeec_brain.apps.auth.wrappers import allowed_roles, allow_all_roles
 from jeec_brain.models.enums.meal_type_enum import MealTypeEnum
 from jeec_brain.models.enums.dish_type_enum import DishTypeEnum
 from jeec_brain.schemas.admin_api.meals.schemas import *
+from jeec_brain.schemas.admin_api.schemas import *
 from datetime import datetime
 from flask_login import current_user
 
@@ -17,9 +18,14 @@ from flask_login import current_user
 # Meals routes
 @bp.get('/meals')
 @allow_all_roles
-def meals_dashboard():
+def meals_dashboard(query: MealQuery):
+    """
+    Description: Searches for meals in day/according to parameters given in URL and directs user to those meals' dashboard. If no information is given in URL all meals are considered
+    Possible response codes: 200 
+    """
     search_parameters = request.args
-    day = request.args.get('day')
+    #day = request.args.get('day')
+    day= query.day
 
     # handle search bar requests
     if day is not None:
@@ -48,6 +54,10 @@ def meals_dashboard():
 @bp.get('/new-meal')
 @allowed_roles(['admin', 'companies_admin'])
 def add_meal_dashboard():
+    """
+    Description: Directs user to "add meal" page
+    Possible response codes: 200
+    """
     companies = CompaniesFinder.get_all()
     meal_types = GetMealTypesService.call()
     dish_types = GetDishTypesService.call()
@@ -58,16 +68,27 @@ def add_meal_dashboard():
         error=None)
 
 
-@bp.post('/new-meal')
+@bp.post('/new-meal', responses={'404': APIError, '500': APIError})
 @allowed_roles(['admin', 'companies_admin'])
-def create_meal():
+def create_meal(form: MealForm):
+    """
+    Description: Creates meal with parameters given in form
+    Possible response codes: 200, 302, 404, 500
+    """
     # extract form parameters
-    meal_type = request.form.get('type')
-    location = request.form.get('location')
-    day = request.form.get('day')
-    time = request.form.get('time')
-    registration_day = request.form.get('registration_day')
-    registration_time = request.form.get('registration_time')
+    # meal_type = request.form.get('type')
+    # location = request.form.get('location')
+    # day = request.form.get('day')
+    # time = request.form.get('time')
+    # registration_day = request.form.get('registration_day')
+    # registration_time = request.form.get('registration_time')
+    meal_type = form.type
+    location = form.location
+    day = form.day
+    time = form.time
+    registration_day = form.registration_day
+    registration_time = form.registration_time
+
 
     if meal_type not in GetMealTypesService.call():
         return 'Wrong meal type provided', 404
@@ -91,8 +112,10 @@ def create_meal():
             error="Failed to create meal!")
 
     # extract company names and max dish quantities from parameters
-    companies = request.form.getlist('company')
-    max_dish_quantities = request.form.getlist('max_dish_quantity')
+    # companies = request.form.getlist('company')
+    # max_dish_quantities = request.form.getlist('max_dish_quantity')
+    companies = form.company
+    max_dish_quantities = form.max_dish_quantity
 
     # if company names where provided
     if companies:
@@ -111,9 +134,12 @@ def create_meal():
                 return APIErrorValue('Failed to create company meal').json(500)
     
     # extract dish names and descriptions from parameters
-    dish_names = request.form.getlist('dish_name')
-    dish_descriptions = request.form.getlist('dish_description')
-    dish_types = request.form.getlist('dish_type')
+    # dish_names = request.form.getlist('dish_name')
+    # dish_descriptions = request.form.getlist('dish_description')
+    # dish_types = request.form.getlist('dish_type')
+    dish_names =form.dish_name
+    dish_descriptions = form.dish_description
+    dish_types = form.dish_type
 
     # if dishes names where provided
     if dish_names:
@@ -151,6 +177,10 @@ def create_meal():
 @bp.get('/meal/<string:meal_external_id>')
 @allowed_roles(['admin', 'companies_admin'])
 def get_meal(path: MealPath):
+    """
+    Description: Searches for meal labeled by id given in URL and directs user to "update meal" page of said meal 
+    Possible response codes: 200
+    """
     meal = MealsFinder.get_meal_from_external_id(path.meal_external_id)
     companies = CompaniesFinder.get_all()
     meal_types = GetMealTypesService.call()
@@ -167,9 +197,13 @@ def get_meal(path: MealPath):
         dishes=dishes, \
         error=None)
 
-@bp.post('/meal/<string:meal_external_id>')
+@bp.post('/meal/<string:meal_external_id>', responses={'404':APIError, '500':APIError})
 @allowed_roles(['admin', 'companies_admin'])
-def update_meal(path: MealPath):
+def update_meal(path: MealPath, form: MealForm):
+    """
+    Description: Updates meal labeled by id given in URL with parametes given by the admin user in a form
+    Possible response codes: 200, 302, 404, 500
+    """
     meal = MealsFinder.get_meal_from_external_id(path.meal_external_id)
     company_meals = MealsFinder.get_company_meals_from_meal_id(path.meal_external_id)
     dishes = MealsFinder.get_dishes_from_meal_id(path.meal_external_id)
@@ -178,12 +212,19 @@ def update_meal(path: MealPath):
         return APIErrorValue('Couldnt find meal').json(500)
 
     # extract form parameters
-    meal_type = request.form.get('type')
-    location = request.form.get('location')
-    day = request.form.get('day')
-    time = request.form.get('time')
-    registration_day = request.form.get('registration_day')
-    registration_time = request.form.get('registration_time')
+    # meal_type = request.form.get('type')
+    # location = request.form.get('location')
+    # day = request.form.get('day')
+    # time = request.form.get('time')
+    # registration_day = request.form.get('registration_day')
+    # registration_time = request.form.get('registration_time')
+    meal_type = form.type
+    location = form.location
+    day = form.day
+    time = form.time
+    registration_day = form.registration_day
+    registration_time = form.registration_time
+
 
     if meal_type not in GetMealTypesService.call():
         return 'Wrong meal type provided', 404
@@ -207,8 +248,11 @@ def update_meal(path: MealPath):
             MealsHandler.delete_company_meal(company_meal)
 
     # extract company names and max dish quantities from parameters
-    companies = request.form.getlist('company')
-    max_dish_quantities = request.form.getlist('max_dish_quantity')
+    # companies = request.form.getlist('company')
+    # max_dish_quantities = request.form.getlist('max_dish_quantity')
+    companies = form.company
+    max_dish_quantities = form.max_dish_quantity
+
 
     updated_companies = []
 
@@ -240,9 +284,13 @@ def update_meal(path: MealPath):
                     MealsHandler.delete_company_dish(company_dish)
 
     # extract dish names and descriptions from parameters
-    dish_names = request.form.getlist('dish_name')
-    dish_descriptions = request.form.getlist('dish_description')
-    dish_types = request.form.getlist('dish_type')
+    # dish_names = request.form.getlist('dish_name')
+    # dish_descriptions = request.form.getlist('dish_description')
+    # dish_types = request.form.getlist('dish_type')
+    dish_names = form.dish_name
+    dish_descriptions = form.dish_description
+    dish_types = form.dish_type
+
 
     previous_dish_names = [dish.name for dish in dishes]
     previous_dish_descriptions = [dish.description for dish in dishes]
@@ -327,9 +375,13 @@ def update_meal(path: MealPath):
     return redirect(url_for('admin_api.meals_dashboard'))
 
 
-@bp.get('/meal/<string:meal_external_id>/delete')
+@bp.get('/meal/<string:meal_external_id>/delete', responses={'500':APIError})
 @allowed_roles(['admin', 'companies_admin'])
 def delete_meal(path: MealPath):
+    """
+    Description: Deletes meal labeled by id given in URL
+    Possible response codes: 200, 302, 500
+    """
     meal = MealsFinder.get_meal_from_external_id(path.meal_external_id)
     company_meals = MealsFinder.get_company_meals_from_meal_id(path.meal_external_id)
     dishes = MealsFinder.get_dishes_from_meal_id(path.meal_external_id)
@@ -358,9 +410,13 @@ def delete_meal(path: MealPath):
         return render_template('admin/meals/update_meal.html', meal=meal, error="Failed to delete meal!")
 
 
-@bp.get('/meal/<string:meal_external_id>/dishes')
+@bp.get('/meal/<string:meal_external_id>/dishes', responses={'500': APIError})
 @allowed_roles(['admin', 'companies_admin'])
 def meal_dishes(path: MealPath):
+    """
+    Description: Directs user to meal dishes' page of meal labeled by id given in URL
+    Possible response codes: 200, 500
+    """
     meal = MealsFinder.get_meal_from_external_id(path.meal_external_id)
 
     if meal is None:

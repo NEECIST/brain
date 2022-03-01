@@ -13,12 +13,17 @@ from jeec_brain.apps.auth.wrappers import allowed_roles, allow_all_roles
 from jeec_brain.services.files.rename_image_service import RenameImageService
 #schemas
 from jeec_brain.schemas.admin_api.companies.schemas import *
+from jeec_brain.schemas.admin_api.schemas import *
 
 
 
 @bp.get('/companies')
 @allow_all_roles
 def companies_dashboard():
+    """
+    Description: Directs user to "companies dashboard" page
+    Possible response codes: 200
+    """
     companies_list = CompaniesFinder.get_all()
 
     if len(companies_list) == 0:
@@ -30,8 +35,13 @@ def companies_dashboard():
 
 @bp.post('/companies')
 @allow_all_roles
-def search_company():
-    name = request.form.get('name')
+def search_company(form: CompanySearchForm):
+    """
+    Description: Searches for company with name given by admin user in form
+    Possible response codes: 200
+    """
+    #name = request.form.get('name')
+    name= form.name
     companies_list = CompaniesFinder.search_by_name(name)
 
     if len(companies_list) == 0:
@@ -44,21 +54,38 @@ def search_company():
 @bp.get('/new-company')
 @allowed_roles(['admin', 'companies_admin'])
 def add_company_dashboard():
+    """
+    Description: Directs user to "add company" page
+    Possible response codes: 200
+    """
     return render_template('admin/companies/add_company.html', error=None)
 
 
 @bp.post('/new-company')
 @allowed_roles(['admin', 'companies_admin'])
-def create_company():
-    name = request.form.get('name')
-    link = request.form.get('link')
-    email = request.form.get('email')
-    business_area = request.form.get('business_area')
-    show_in_website = request.form.get('show_in_website')
-    partnership_tier = request.form.get('partnership_tier')
-    evf_username = request.form.get('evf_username')
-    evf_password = request.form.get('evf_password')
-    cvs_access = request.form.get('cvs_access')
+def create_company(form: CompanyForm):
+    """
+    Description: Creates company with parameters given by admin user in form
+    Possible response codes: 200, 302
+    """
+    # name = request.form.get('name')
+    # link = request.form.get('link')
+    # email = request.form.get('email')
+    # business_area = request.form.get('business_area')
+    # show_in_website = request.form.get('show_in_website')
+    # partnership_tier = request.form.get('partnership_tier')
+    # evf_username = request.form.get('evf_username')
+    # evf_password = request.form.get('evf_password')
+    # cvs_access = request.form.get('cvs_access')
+    name = form.name
+    link = form.link
+    email = form.email
+    business_area = form.business_area
+    show_in_website = form.show_in_website
+    partnership_tier = form.partnership_tier
+    evf_username = form.evf_username
+    evf_password = form.evf_password
+    cvs_access = form.cvs_access
 
     if partnership_tier == "":
         partnership_tier = None
@@ -102,6 +129,10 @@ def create_company():
 @bp.get('/company/<string:company_external_id>')
 @allowed_roles(['admin', 'companies_admin'])
 def get_company(path: CompanyPath):
+    """
+    Description: Directs admin user to "update company" page of the company labeled by id given in URL
+    Possible response codes: 200 
+    """
     company = CompaniesFinder.get_from_external_id(path.company_external_id)
 
     image_path = CompaniesHandler.find_image(company.name)
@@ -109,24 +140,39 @@ def get_company(path: CompanyPath):
     return render_template('admin/companies/update_company.html', company=company, image=image_path, error=None)
 
 
-@bp.post('/company/<string:company_external_id>')
+@bp.post('/company/<string:company_external_id>', responses={'500': APIError})
 @allowed_roles(['admin', 'companies_admin'])
-def update_company(path: CompanyPath):
+def update_company(path: CompanyPath, form: CompanyForm):
+    """
+    Description: Updates company labeled by id given in URL with paramenters given by admin user in form
+    Possible response codes: 200, 302, 500
+    """
 
     company = CompaniesFinder.get_from_external_id(path.company_external_id)
 
     if company is None:
         return APIErrorValue('Couldnt find company').json(500)
 
-    name = request.form.get('name')
-    link = request.form.get('link')
-    email = request.form.get('email')
-    business_area = request.form.get('business_area')
-    show_in_website = request.form.get('show_in_website')
-    partnership_tier = request.form.get('partnership_tier')
-    evf_username = request.form.get('evf_username')
-    evf_password = request.form.get('evf_password')
-    cvs_access = request.form.get('cvs_access')
+    # name = request.form.get('name')
+    # link = request.form.get('link')
+    # email = request.form.get('email')
+    # business_area = request.form.get('business_area')
+    # show_in_website = request.form.get('show_in_website')
+    # partnership_tier = request.form.get('partnership_tier')
+    # evf_username = request.form.get('evf_username')
+    # evf_password = request.form.get('evf_password')
+    # cvs_access = request.form.get('cvs_access')
+
+    name = form.name
+    link = form.link
+    email = form.email
+    business_area = form.business_area
+    show_in_website = form.show_in_website
+    partnership_tier = form.partnership_tier
+    evf_username = form.evf_username
+    evf_password = form.evf_password
+    cvs_access = form.cvs_access
+
 
     if partnership_tier == "":
         partnership_tier = None
@@ -174,13 +220,17 @@ def update_company(path: CompanyPath):
     return redirect(url_for('admin_api.companies_dashboard'))
 
 
-@bp.get('/company/<string:company_external_id>/delete')
+@bp.get('/company/<string:company_external_id>/delete', responses={'500':APIError})
 @allowed_roles(['admin', 'companies_admin'])
 def delete_company(path: CompanyPath):
+    """
+    Description: Deletes company with id labeled in URL
+    Possible response codes: 200, 302, 500
+    """
     company = CompaniesFinder.get_from_external_id(path.company_external_id)
 
     if company is None:
-        return APIErrorValue('Couldnt find company').json(500)
+        return APIErrorValue("Couldn't find company").json(500)
     
     name = company.name
 
