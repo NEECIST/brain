@@ -78,14 +78,14 @@
       <div class="row">
         <div class="input-field col s8">
           <textarea id="description" name="description" class="materialize-textarea" value="{{team.description}}"
-            maxlength="300">{{ team.description }}</textarea>
+            maxlength="300" required>{{ team.description }}</textarea>
           <label for="description">Description</label>
         </div>
       </div>
 
       <div class="row">
         <div class="input-field col s8">
-          <input name="website_priority" id="website_priority" type="number" value="{{team.website_priority}}"></input>
+          <input name="website_priority" id="website_priority" type="number" value="{{team.website_priority}}" required></input>
           <label for="website_priority">Priority in the website (bigger values appear first)</label>
         </div>
       </div>

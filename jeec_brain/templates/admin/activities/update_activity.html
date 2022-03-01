@@ -93,7 +93,7 @@
         </div>
 
         <div class="input-field col s1">
-          <input id="day" name="day" type="text" class="validate" value="{{ activity.day }}">
+          <input id="day" name="day" type="text" class="validate" value="{{ activity.day }}" required>
           <label for="day">Day</label>
         </div>
 
@@ -147,7 +147,7 @@
         </div>
 
         <div class="input-field col s2">
-          <input id="points" name="points" type="number" min="0" class="validate" value="{{ activity.points }}">
+          <input id="points" name="points" type="number" min="0" class="validate" value="{{ activity.points }}" required>
           <label for="points">Points</label>
         </div>
       </div>
@@ -187,7 +187,7 @@
 
       <div class="row">
         <div class="input-field col s3">
-          <select multiple name="company" id="companies">
+          <select multiple name="company" id="companies" required>
             {% for company in companies %}
             <option value="{{ company.name }}" {% if company.id in company_activities %} selected {% endif %}>
               {{ company.name }}</option>

@@ -27,6 +27,10 @@ from datetime import datetime
 @bp.get('/statistics')
 @require_company_login
 def statistics_dashboard(company_user):
+    """
+        Description: Loads dashboard with default event's statistics
+        Possible response codes: 200
+    """
     event = EventsFinder.get_default_event()
     company_user = UsersFinder.get_company_user_from_user(current_user)
     interested_students = StudentsFinder.get_company_students(company_user.company)

@@ -23,24 +23,34 @@ from jeec_brain.handlers.events_handler import EventsHandler
 
 from jeec_brain.apps.auth.wrappers import requires_client_auth
 
+# Schemas
+from jeec_brain.schemas.website_api.schemas import *
+
 
 # Activities routes
-@bp.get('/activities')
+@bp.get('/activities', responses = {'200': ActivityList})
 @requires_client_auth
-def get_activities():
-    search_parameters = request.args
-    name = request.args.get('name')
-    speaker = request.args.get('speaker')
-    company = request.args.get('company')
+def get_activities(query:ActivityQuery):
+    """
+        Description: Loads activities that satisfy the parameters, if there are any
+        Possible response codes: 200 , 400 , 404
+    """
+    search_parameters = request.args 
+    #name = request.args.get('name')
+    #speaker = request.args.get('speaker')
+    #company = request.args.get('company')
+    name = query.name
+    speaker = query.speaker
+    company = query.company
     
-    event = request.args.get('event')
+    event = query.event
     if event is None:
         event = EventsFinder.get_default_event()
     else:
         event = EventsFinder.get_from_name(event)
 
     if event is None:
-        return APIErrorValue("Event no found!").json(404)
+        return APIErrorValue("Event not found!").json(404)
 
     activities_list = []
 
@@ -88,12 +98,17 @@ def get_activities():
 
 
 # Companies routes
-@bp.get('/companies')
+@bp.get('/companies', responses = {'200': CompaniesList})
 @requires_client_auth
-def get_companies():
+def get_companies(query:EventQuery):
+    """
+        Description: Returns a list of companies that are in the website and participating in the event
+        Possible response codes: 200 , 404
+    """
     search_parameters = request.args.to_dict()
     search_parameters.pop('event', None)
-    event_name = request.args.get('event', None)
+    #event_name = request.args.get('event', None)
+    event_name = query.event
 
     if event_name is None:
         event = EventsFinder.get_default_event()
@@ -112,9 +127,13 @@ def get_companies():
 
 
 # Speakers routes
-@bp.get('/speakers')
+@bp.get('/speakers', responses = {'200': SpeakerList})
 @requires_client_auth
-def get_speakers():
+def get_speakers(query:EventQuery):
+    """
+        Description: Returns a list of speakers that are in the website and participating in the event
+        Possible response codes: 200 , 404
+    """
     search_parameters = request.args.to_dict()
     search_parameters.pop('event', None)
     if 'spotlight' in search_parameters:
@@ -123,7 +142,9 @@ def get_speakers():
             elif search_parameters['spotlight'] == 'False':
                 search_parameters['spotlight'] = False
 
-    event_name = request.args.get('event')
+    #event_name = request.args.get('event')
+    event_name = query.event
+
     if event_name is None:
         event = EventsFinder.get_default_event()
     else:
@@ -140,11 +161,16 @@ def get_speakers():
     return SpeakersValue(speakers_list).json(200)
 
 # Team routes
-@bp.get('/teams')
+@bp.get('/teams', responses = {'200': TeamList})
 @requires_client_auth
-def get_teams():
+def get_teams(query:TeamQuery):
+    """
+        Description: Returns a list of Teams with a certain name
+        Possible response codes: 200 , 400
+    """
     search_parameters = request.args
-    name = request.args.get('name')
+    #name = request.args.get('name')
+    name = query.name
 
     # handle search bar requests
     if name is not None:
@@ -170,9 +196,13 @@ def get_teams():
 
     return TeamsValue(teams_list).json(200)
 
-@bp.get('/event')
+@bp.get('/event',responses = {'200': EventDetailList} )
 @requires_client_auth
 def get_event():
+    """
+        Description: Returns default event 
+        Possible response codes: 200
+    """
     event = EventsFinder.get_default_event()
 
     return EventsValue(event).json(200)

@@ -1,3 +1,4 @@
+from http.client import responses
 from jeec_brain.apps.companies_api import bp
 from flask import render_template, session, request, redirect, url_for
 from jeec_brain.apps.auth.wrappers import require_company_login
@@ -11,9 +12,17 @@ from jeec_brain.schemas.companies_api.meals.schemas import *
 from datetime import datetime
 import json
 
+#Schemas
+from jeec_brain.schemas.companies_api.schemas import *
+
+
 @bp.get('/meals')
 @require_company_login
 def meals_dashboard(company_user):
+    """
+        Description: Loads a page for companies to sign up for meals, if there are any available
+        Possible response codes: 200
+    """
     meals_list = company_user.company.meals
 
     open_registrations = []
@@ -36,9 +45,13 @@ def meals_dashboard(company_user):
     return render_template('companies/meals/meals_dashboard.html', meals=meals_list, open_registrations=open_registrations, error=None, company=company_user.company)
 
 
-@bp.get('/meal/<string:meal_external_id>')
+@bp.get('/meal/<string:meal_external_id>', responses = {'400':APIError})
 @require_company_login
 def get_meal(company_user, path: MealPath):
+    """
+        Description: If company is allowed in meal loads page with it's specifications
+        Possible response codes: 200 , 400
+    """
     # get meal
     meal = MealsFinder.get_meal_from_external_id(path.meal_external_id)
 
@@ -86,9 +99,13 @@ def get_meal(company_user, path: MealPath):
         user=company_user)
 
 
-@bp.post('/meal/<string:meal_external_id>')
+@bp.post('/meal/<string:meal_external_id>', responses = {'400':APIError,'500':APIError})
 @require_company_login
 def choose_dishes(company_user, path: MealPath):
+    """
+        Description: Loads a page for companies to choose the meal's dishes if they signed up before the limit date
+        Possible response codes: 302 , 400 , 500
+    """
     # get meal
     meal = MealsFinder.get_meal_from_external_id(path.meal_external_id)
     

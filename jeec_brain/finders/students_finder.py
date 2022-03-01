@@ -69,6 +69,13 @@ class StudentsFinder():
         return StudentActivities.query.filter_by(student_id=student_id, activity_id=activity_id).first()
 
     @classmethod
+    def get_students_from_activity_id(cls, activity_id):
+        return Students.query.join(StudentActivities, (StudentActivities.student_id == Students.id))\
+            .join(Users, Users.id == Students.user_id)\
+            .filter(StudentActivities.activity_id==activity_id)\
+            .with_entities(Students).order_by(Users.username).all()
+
+    @classmethod
     def get_student_company(cls, student, company):
         return StudentCompanies.query.filter_by(student_id=student.id, company_id=company.id).first()
 

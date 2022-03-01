@@ -1,31 +1,47 @@
+from http.client import responses
 from jeec_brain.apps.companies_api import bp
 from flask import render_template, session, request, redirect, url_for, jsonify
 from jeec_brain.apps.auth.wrappers import require_company_login
 from jeec_brain.finders.companies_finder import CompaniesFinder
+from jeec_brain.handlers.activities_handler import ActivitiesHandler
 from jeec_brain.handlers.companies_handler import CompaniesHandler
+from jeec_brain.handlers.students_handler import StudentsHandler
 from jeec_brain.handlers.users_handler import UsersHandler
 from jeec_brain.finders.activities_finder import ActivitiesFinder
 from jeec_brain.finders.activity_types_finder import ActivityTypesFinder
 from jeec_brain.finders.activity_codes_finder import ActivityCodesFinder
+from jeec_brain.finders.students_finder import StudentsFinder
 from jeec_brain.handlers.activity_codes_handler import ActivityCodesHandler
 from jeec_brain.values.api_error_value import APIErrorValue
 from jeec_brain.schemas.companies_api.activities.schemas import *
 from datetime import datetime
 from config import Config
+from jeec_brain.schemas.companies_api.schemas import *
 
 @bp.get('/activities')
 @require_company_login
 def activities_dashboard(company_user):
+    
+    """
+        Description: Loads dashboard and displays activities if there are any
+        Possible response codes: 200
+    """
+    
     activities = company_user.company.activities
+   
     if activities is None or len(activities) == 0:
         return render_template('companies/activities/activities_dashboard.html', activities=None, error="No activities found", company=company_user.company)
 
     return render_template('companies/activities/activities_dashboard.html', activities=activities, error=None, company=company_user.company)
 
 
-@bp.get('/activity/<string:activity_external_id>')
+@bp.get('/activity/<string:activity_external_id>', responses = {'400':APIError})
 @require_company_login
 def get_activity(company_user, path: ActivityPath):
+    """
+        Description: Loads page of the requested activity if it exists
+        Possible response codes: 200 , 400
+    """
     activity = ActivitiesFinder.get_from_external_id(path.activity_external_id)
     if activity is None:
         return APIErrorValue('Couldnt find activity').json(400)
@@ -38,9 +54,13 @@ def get_activity(company_user, path: ActivityPath):
         codes=codes, \
         user=company_user)
 
-@bp.get('/activity_type/<string:activity_type_external_id>')
+@bp.get('/activity_type/<string:activity_type_external_id>', responses = {'404':APIError})
 @require_company_login
 def get_activity_type(company_user, path: ActivityTypePath):
+    """
+        Description: Loads page with activities of a certain type if any exists
+        Possible response codes: 200 , 404
+    """
     activity_type = ActivityTypesFinder.get_from_external_id(path.activity_type_external_id)
     if activity_type is None:
         return APIErrorValue("No activity type found").json(404)
@@ -68,9 +88,13 @@ def get_activity_type(company_user, path: ActivityTypePath):
         error=None, \
         user=company_user)
 
-@bp.get('/job_fair')
+@bp.get('/job_fair', responses = {'404':APIError})
 @require_company_login
 def get_job_fair(company_user):
+    """
+        Description: Loads page with Job Fair Booth if it exists
+        Possible response codes:  200 , 404
+    """
     job_fairs = []
     for activity in ActivitiesFinder.get_current_company_activities(company_user.company):
         if activity.activity_type.name == 'Job Fair Booth':
@@ -101,16 +125,103 @@ def get_job_fair(company_user):
         error=None, \
         user=company_user)
 
-@bp.post('/activity/code')
+@bp.get('/activity/code')
 @require_company_login
-def generate_code(company_user):
+def activity_redeem_code(company_user):
+
     now = datetime.utcnow()
     today = now.strftime('%d %b %Y, %a')
 
+    activities = ActivitiesFinder.get_current_company_activities(company_user.company)
+    
+    if not activities : 
+        return redirect(url_for('companies_api.dashboard'))
+       
+    students_in_activity = None
+    activity_redeem = None
+    for activity in activities:
+        if activity.activity_type.name == 'Job Fair Booth' and activity.day == today:
+            students_in_activity = StudentsFinder.get_students_from_activity_id(activity.id)
+            activity_redeem = activity
+            break
+
+    if students_in_activity is None and activity_redeem is None :
+        return redirect(url_for('companies_api.dashboard'))
+
+    return render_template('companies/activities/redeem_code.html',\
+        user = company_user, \
+        activity_name = activity_redeem.name, \
+        student_list = students_in_activity, \
+        total_students = len(students_in_activity), \
+        error = None, \
+        message = None)
+    
+@bp.post('/activity/code')
+@require_company_login
+def activity_redeem_student(company_user, form: UserIdForm):
+
+    now = datetime.utcnow()
+    today = now.strftime('%d %b %Y, %a')
+
+    activities = ActivitiesFinder.get_current_company_activities(company_user.company)
+    
+    if not activities : 
+        return redirect(url_for('companies_api.dashboard'))
+       
+    students_in_activity = None
+    activity_redeem = None
+    for activity in activities:
+        if activity.activity_type.name == 'Job Fair Booth' and activity.day == today:
+            students_in_activity = StudentsFinder.get_students_from_activity_id(activity.id)
+            activity_redeem = activity
+            break
+
+    if students_in_activity is None and activity_redeem is None :
+        return redirect(url_for('companies_api.dashboard'))
+
+    student_ist_id = form.ist_id
+    student = StudentsFinder.get_from_ist_id(student_ist_id)
+    
+    if student is None:
+        return render_template('companies/activities/redeem_code.html',\
+            user = company_user, \
+            activity_name = activity.name, \
+            student_list = students_in_activity, \
+            total_students = len(students_in_activity), \
+            error = "Student not found", )
+
     for activity in ActivitiesFinder.get_current_company_activities(company_user.company):
         if activity.activity_type.name == 'Job Fair Booth' and activity.day == today:
-            activity_code = ActivityCodesHandler.create_activity_code(activity_id=activity.id)
+            
+            student_activity = StudentsFinder.get_student_activity_from_id_and_activity_id(student.id,activity.id)
 
-            return jsonify(activity_code.code)
-    
-    return APIErrorValue("Not allowed").json(401)
+            student_ist_id = form.ist_id
+            if student_activity is not None:
+
+                return render_template('companies/activities/redeem_code.html',\
+                    user = company_user, \
+                    activity_name = activity.name, \
+                    student_list = students_in_activity, \
+                    total_students = len(students_in_activity), \
+                    error = "Already added activity to student",) 
+                    
+            ActivitiesHandler.add_student_activity(student, activity)
+            StudentsHandler.add_points(student, activity.points)
+
+            return redirect(url_for('companies_api.activity_redeem_code'))
+
+    return redirect(url_for('companies_api.dashboard'))
+
+# @bp.post('/activity/code')
+# @require_company_login
+# def generate_code(company_user):
+#     now = datetime.utcnow()
+#     today = now.strftime('%d %b %Y, %a')
+
+#     for activity in ActivitiesFinder.get_current_company_activities(company_user.company):
+#         if activity.activity_type.name == 'Job Fair Booth' and activity.day == today:
+#             activity_code = ActivityCodesHandler.create_activity_code(activity_id=activity.id)
+
+#             return jsonify(activity_code.code)
+
+#     return APIErrorValue("Not allowed").json(401)

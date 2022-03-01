@@ -1,3 +1,4 @@
+from http.client import responses
 from logging import warning
 from jeec_brain.apps.companies_api import bp
 from flask import render_template, session, request, redirect, url_for
@@ -9,12 +10,19 @@ from jeec_brain.handlers.auctions_handler import AuctionsHandler
 from jeec_brain.values.api_error_value import APIErrorValue
 from jeec_brain.schemas.companies_api.auctions.schemas import AuctionPath
 
+#Schemas
+from jeec_brain.schemas.companies_api.schemas import *
+
 from datetime import datetime
 
 
-@bp.get('/auction/<string:auction_external_id>')
+@bp.get('/auction/<string:auction_external_id>', responses = {'400':APIError})
 @require_company_login
 def auction_dashboard(company_user, path: AuctionPath):
+    """
+        Description: If the auction is happening and the company is allowed loads page with it
+        Possible response codes: 200 , 400
+    """
     # get auction
     auction = AuctionsFinder.get_auction_by_external_id(path.auction_external_id)
 
@@ -70,15 +78,21 @@ def auction_dashboard(company_user, path: AuctionPath):
         search=None)
 
 
-@bp.post('/auction/<string:auction_external_id>/bid')
+@bp.post('/auction/<string:auction_external_id>/bid', responses = {'400':APIError})
 @require_company_login
-def auction_bid(company_user, path: AuctionPath):
+def auction_bid(company_user, path: AuctionPath, form:AuctionBidForm):
+    """
+        Description: Lets a company bid on a auction 
+        Possible response codes: 302 , 400
+    """
     try:
-        value = float(request.form.get('value'))
+        #value = float(request.form.get('value'))
+        value = float(form.value)
     except:
         return redirect(url_for('companies_api.auction_dashboard', auction_external_id=path.auction_external_id))
 
-    is_anonymous = request.form.get('is_anonymous')
+    #is_anonymous = request.form.get('is_anonymous')
+    is_anonymous = form.is_anonymous
     
     if is_anonymous == 'True':
         is_anonymous = True

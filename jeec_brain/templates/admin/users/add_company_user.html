@@ -99,8 +99,8 @@
           {% if companies|length == 0 %}
           <p class="right">Please create a company profile first!</p>
           {% else %}
-          <select name="company_external_id" class="select-css right" style="width: 170px; display: block;">
-            <option>Select company</option>
+          <select name="company_external_id" class="select-css right" style="width: 170px; display: block;" required>
+            <option value="">Select company</option>
             {% for company in companies %}
             <option value="{{ company.external_id }}">{{ company.name }}</option>
             {% endfor %}

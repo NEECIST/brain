@@ -93,7 +93,15 @@
     <form action="/companies/statistics" method="get">
       <button class="waves-effect red lighten-2 btn-large dashboard-btn" style="width: auto;"><i class="large material-icons left">assessment</i>App Statistics</button>
     </form>
-  </div>
+
+    {% if activity_job_fair is sameas true %}
+    <form action="/companies/activity/code" method="get">
+      <button class="waves-effect red lighten-2 btn-large dashboard-btn" style="width: auto;" {% if not activity_job_fair_today %}
+      disabled {% endif%}><i class="large material-icons left">code</i>Activity Codes</button>
+    </form>
+      {% endif %}
+    </div>
+    
 
   <blockquote style="margin-left: 40px;margin-top: 70px;">
     <b>Disclaimer!</b> Usage of this platform implies the acceptance of the <b>Terms and Conditions</b>!

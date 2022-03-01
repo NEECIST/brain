@@ -13,14 +13,22 @@ from jeec_brain.values.api_error_value import APIErrorValue
 from jeec_brain.schemas.admin_api.users.schemas import *
 from flask_login import current_user
 
+#Schemas
+from jeec_brain.schemas.admin_api.schemas import *
 
 # Users routes
 @bp.get('/users')
 @allowed_roles(['admin'])
-def users_dashboard():
+def users_dashboard(query:AdminQuery):
+    """
+        Description: Loads a page with a list of specific users according to URL parameters
+        Possible response codes: 200
+    """
+    # search_parameters = request.args
+    # username = request.args.get('username')
     search_parameters = request.args
-    username = request.args.get('username')
-
+    username = query.username
+    
     # handle search bar requests
     if username is not None:
         search = username
@@ -51,6 +59,10 @@ def users_dashboard():
 @bp.get('/new-user')
 @allowed_roles(['admin'])
 def add_user_dashboard():
+    """
+        Description: Removes the roles of company and student of a certain user
+        Possible response codes: 200
+    """
     roles = GetRolesService.call()
 
     if 'company' and 'student' in roles: 
@@ -66,6 +78,10 @@ def add_user_dashboard():
 @bp.get('/new-organization-user')
 @allowed_roles(['admin'])
 def add_company_user_dashboard():
+    """
+        Description: Loads page to add company user
+        Possible response codes: 200
+    """
     companies = CompaniesFinder.get_all()
 
     return render_template('admin/users/add_company_user.html', \
@@ -74,20 +90,32 @@ def add_company_user_dashboard():
         error=None)
 
 
-@bp.post('/new-user')
+@bp.post('/new-user', responses = {'404': APIError})
 @allowed_roles(['admin'])
-def create_user():
+def create_user(form:UserForm):
+    """
+        Description: Creates user or company user using form data 
+        Possible response codes: 200 , 302 , 404
+    """
     # extract form parameters
-    name = request.form.get('name')
-    username = request.form.get('username')
-    email = request.form.get('email', None)
-    role = request.form.get('role', None)
-    post = request.form.get('post', None)
-    evf_username = request.form.get('evf_username', None)
-    evf_password = request.form.get('evf_password', None)
+    #name = request.form.get('name')
+    #username = request.form.get('username')
+    #email = request.form.get('email', None)
+    #role = request.form.get('role', None)
+    #post = request.form.get('post', None)
+    #evf_username = request.form.get('evf_username', None)
+    #evf_password = request.form.get('evf_password', None)
+    name = form.name
+    username = form.username
+    email = form.email
+    role = form.role
+    post = form.post
+    evf_username = form.evf_username
+    evf_password = form.evf_password
     
     # check if is creating company user
-    company_external_id = request.form.get('company_external_id')
+    #company_external_id = request.form.get('company_external_id')
+    company_external_id = form.company_external_id
     if company_external_id is not None:
         company = CompaniesFinder.get_from_external_id(company_external_id)
         company_id = company.id
@@ -96,7 +124,8 @@ def create_user():
             return 'No company found', 404
 
     # extract food_manager from parameters
-    food_manager = request.form.get('food_manager', None)
+    #food_manager = request.form.get('food_manager', None)
+    food_manager = form.food_manager
 
     if food_manager == 'True':
         food_manager = True
@@ -155,9 +184,13 @@ def create_user():
     return redirect(url_for('admin_api.users_dashboard'))
 
 
-@bp.get('/user/<string:user_external_id>/delete')
+@bp.get('/user/<string:user_external_id>/delete', responses = {'500': APIError})
 @allowed_roles(['admin'])
 def delete_user(path: UserPath):
+    """
+        Description: Deletes user or company user if it exists
+        Possible response codes: 302 , 500
+    """
     user = UsersFinder.get_from_external_id(path.user_external_id)
 
     if user is None:
@@ -176,9 +209,13 @@ def delete_user(path: UserPath):
     return redirect(url_for('admin_api.users_dashboard'))
 
 
-@bp.get('/user/<string:user_external_id>/credentials')
+@bp.get('/user/<string:user_external_id>/credentials', responses = {'500': APIError})
 @allowed_roles(['admin'])
 def generate_user_credentials(path: UserPath):
+    """
+        Description: Generates new credentials for a specific user given in URL
+        Possible response codes: 302 , 500
+    """
     user = UsersFinder.get_from_external_id(path.user_external_id)
 
     if user is None:

@@ -9,10 +9,16 @@ from jeec_brain.finders.events_finder import EventsFinder
 from jeec_brain.schemas.companies_api.resumes.schemas import *
 from datetime import datetime
 
+#Schemas
+from jeec_brain.schemas.companies_api.schemas import *
 
 @bp.get('/resumes')
 @require_company_login
 def resumes_dashboard(company_user):
+    """
+        Description: If we are within a certain period of time, loads a dashboard with CVs 
+        Possible response codes: 200
+    """
     if company_user.company.cvs_access:
         event = EventsFinder.get_default_event()
         today = datetime.now()
@@ -31,6 +37,10 @@ def resumes_dashboard(company_user):
 @bp.get('/resumes/<string:student_external_id>/download')
 @require_company_login
 def download_resume(company_user, path: StudentPath):
+    """
+        Description: Returns certain student's CV in pdf format, if it exists 
+        Possible response codes: 200
+    """
     student = StudentsFinder.get_from_external_id(path.student_external_id)
     if(student is None):
         return render_template('companies/resumes/resumes_dashboard.html', error="Student not found")
@@ -42,6 +52,10 @@ def download_resume(company_user, path: StudentPath):
 @bp.get('/resumes/download')
 @require_company_login
 def download_resumes(company_user):
+    """
+        Description: Returns a zip file with all the available CVs
+        Possible response codes: 200 , 400
+    """
     zip_file = FileHandler.get_files_zip()
         
     if not zip_file:
