@@ -24,102 +24,69 @@
 
   </head>
       
-      <body>
-          <div class="nav-bar">
-            <a href="{{ url_for('companies_api.dashboard') }}"><img class="jeec-logo-mobile"
-                src="/static/jeec_logo_mobile.svg"></a>
-        
-            <div class="company-dash-username right" style="color:black">{{ user.user.name }}</div>
-        
-            <form action="{{ url_for('companies_api.company_logout') }}" method="get">
-              <button class="waves-effect red lighten-2 btn-small right logout-btn"><i class="material-icons left">lock</i>Log
-                out</button>
-            </form>
-        
-            <a target="_blank" rel="noopener noreferrer" href="https://jeec.ist" method="get">
-              <button class="waves-effect waves-light btn-small right" style="margin-top: -3px; margin-right: 50px;"><i
-                  class="large material-icons left">web</i>Visit website</button>
-            </a>
-          </div>
-        
-          <div class="section-header">
-            <h2>Redeem Codes for {{ activity_name }}</h2>
-          </div>
-        
-          <form action="{{ url_for('companies_api.dashboard') }}" method="get" class="row s12">
-            <button class="waves-effect waves-light btn back-btn left"><i
-                class="material-icons left">arrow_back</i>back</button>
-          </form>
-  
-          <br>
-          <div>
-            <div class="create-form" style="float:left;width:50%">
-  
-              {% if error is not none %}
-              <blockquote class = "create-error" >
-                {{ error }}
-              </blockquote>
-              {% endif %}
-            
-              <form  action="{{ url_for('companies_api.activity_redeem_student') }}" method="post">
-                <div class = "row 1">
-                  <div class="col s4">
-                    <div class="input-field" style="margin-right: 10px;">
-                      <input name="ist_id" id="ist_id" type="text" required></input>
-                      <label for="ist_id">Student's id</label>
-                    </div>
-                  </div>
-                  <div class = "col s2" style="position:relative; top:30px">
-                    <button type="submit" class="waves-effect blue lighten-2 btn add-btn right"><i
-                          class="material-icons left"></i>Submit</button>
-                  </div>
-                </div>
-              </form>
-              <div class="row 1">
-                <div class="col s1.5">
-                  <button class="waves-effect blue lighten-2 btn add-btn right" id="show_students"><i
-                          class="material-icons left"></i>Show students ({{total_students}})</button>
-                </div>
-              </div>
-            </div>
-            <div class = "col s4">
-              <table id = "students">
-                <tr>
-                  <th>Student's id</th>
-                  <th>Student's name</th>
-                </tr>
-                <ul>
-                        {% for student in student_list %}
-                  <tr>
-                    <td>{{student.user.username}}</td>
-                    <td>{{student.user.name}}</td>
-                  </tr>
-                        {% endfor %}
-                </ul>
-              </table>
-              </div>
-            </div>
-          </div>
-              </body>
-    <script>
-      students_button= document.getElementById("show_students");
-      document.getElementById("students").style.display="none"
-      students_button.addEventListener('click',show_students);
-      function show_students(){
-        students_list = document.getElementById("students");
-        students_button= document.getElementById("show_students");
-        if (students_list.style.display=="block"){
-          students_list.style.display="none"
-          students_button.textContent="Show students ({{total_students}})"
-        }
-        else{
-          students_list.style.display="block"
-          students_button.textContent="Hide students ({{total_students}})"
-        }
-      }
-    </script>
+  <body>
+      <div class="nav-bar">
+        <a href="{{ url_for('companies_api.dashboard') }}"><img class="jeec-logo-mobile"
+            src="/static/jeec_logo_mobile.svg"></a>
+    
+        <div class="company-dash-username right" style="color:black">{{ user.user.name }}</div>
+    
+        <form action="{{ url_for('companies_api.company_logout') }}" method="get">
+          <button class="waves-effect red lighten-2 btn-small right logout-btn"><i class="material-icons left">lock</i>Log
+            out</button>
+        </form>
+    
+        <a target="_blank" rel="noopener noreferrer" href="https://jeec.ist" method="get">
+          <button class="waves-effect waves-light btn-small right" style="margin-top: -3px; margin-right: 50px;"><i
+              class="large material-icons left">web</i>Visit website</button>
+        </a>
+      </div>
+    
+      <div class="section-header">
+        <h2>Redeem Codes for {{ activity_name }}</h2>
+      </div>
+    
+      <form action="{{ url_for('companies_api.dashboard') }}" method="get" class="row s12">
+        <button class="waves-effect waves-light btn back-btn left"><i
+            class="material-icons left">arrow_back</i>back</button>
+      </form>
 
-      
-      <body>   
+      <br>
+      <div id="ist_id" style="height: auto;">
+        {% if error is not none %}
+        <blockquote class = "create-error" >
+          {{ error }}
+        </blockquote>
+        {% endif %}
+        {% if message is not none %}
+        <blockquote class = "create-error" >
+          {{ message }}
+        </blockquote>
+        {% endif %}
+        <center style="margin-top: 40px;">
+        
+          <form  action="{{ url_for('companies_api.activity_redeem_student') }}" method="post">
+            <label class = "sub_section-title">Student's IST id</label>
+            <br>
+            <input id="code-input" name="ist_id" placeholder="istXXXXXXX" style="margin-top: 20px;" required>
+            <div style="margin-top: 40px;">
+              <button id="code" type="submit" class="waves-effect blue lighten-2 btn-large dashboard-btn"
+                style="width: auto; margin-right: 10px;"><i class="large material-icons left">add</i>Add Student
+              </button>
+            </div>
+          </form>
+        </center>
+      </div>
+  </body>
+  <script>
+    $(function (){
+      $("#ist_id").click(function () {
+        $.post("/companies/activity/code", function (data) {
+          var code = data.substring(0, 4) + '-' + data.substring(4, 8) + '-' + data.substring(8, 12) + '-' + data.substring(12);
+          $('#code-input').val(code);
+        });
+      });
+    }
+  </script> 
     
 </html>

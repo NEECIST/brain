@@ -188,7 +188,8 @@ def activity_redeem_student(company_user, form: UserIdForm):
             activity_name = activity.name, \
             student_list = students_in_activity, \
             total_students = len(students_in_activity), \
-            error = "Student not found", )
+            error = "Student not found", \
+            message = None)
 
     for activity in ActivitiesFinder.get_current_company_activities(company_user.company):
         if activity.activity_type.name == 'Job Fair Booth' and activity.day == today:
@@ -203,12 +204,19 @@ def activity_redeem_student(company_user, form: UserIdForm):
                     activity_name = activity.name, \
                     student_list = students_in_activity, \
                     total_students = len(students_in_activity), \
-                    error = "Already added activity to student",) 
+                    error = "Already added activity to student", \
+                    message = None) 
                     
             ActivitiesHandler.add_student_activity(student, activity)
             StudentsHandler.add_points(student, activity.points)
 
-            return redirect(url_for('companies_api.activity_redeem_code'))
+            return render_template('companies/activities/redeem_code.html',\
+                    user = company_user, \
+                    activity_name = activity.name, \
+                    student_list = students_in_activity, \
+                    total_students = len(students_in_activity), \
+                    error = None, \
+                    message = f"Successfully added student {student_ist_id}") 
 
     return redirect(url_for('companies_api.dashboard'))
 
