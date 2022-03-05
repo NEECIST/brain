@@ -21,18 +21,22 @@ from jeec_brain.models.enums.activity_chat_enum import ActivityChatEnum
 from jeec_brain.values.api_error_value import APIErrorValue
 from jeec_brain.apps.auth.wrappers import allowed_roles, allow_all_roles
 from jeec_brain.schemas.admin_api.activities import *
-
-
+from jeec_brain.schemas.admin_api.schemas import *
 # Activities routes
 @bp.get('/activities')
 @allow_all_roles
-def activities_dashboard():
+def activities_dashboard(query: ActivityQuery):
+    """
+    Description: Searches for the requested event and sends admin user to its dashboard if found
+    Possible response codes: 200 
+    """
     search_parameters = request.args
-    name = request.args.get('name')
+    #name = request.args.get('name')
+    name = query.name
 
     # get event
-    event_id = request.args.get('event',None)
-
+    #event_id = request.args.get('event',None)
+    event_id = query.event
     if(event_id is None):
         event = EventsFinder.get_default_event()
     else:
@@ -76,10 +80,15 @@ def activities_dashboard():
 # Activities Types routes
 @bp.get('/activities/types')
 @allow_all_roles
-def activity_types_dashboard():
+def activity_types_dashboard(query: ActivityQuery):
+    """
+    Description: Searches event by id given in URL, if none is given seaches default event. Redirects to the event dashboard
+    Possible response codes: 200
+    """
     events = EventsFinder.get_all()
 
-    event_id = request.args.get('event',None)
+    #event_id = request.args.get('event',None)
+    event_id = query.event
     if(event_id is None):
         event = EventsFinder.get_default_event()
     else:
@@ -93,10 +102,15 @@ def activity_types_dashboard():
 
 @bp.post('/activities/types')
 @allow_all_roles
-def search_activity_types():
+def search_activity_types(query: ActivityQuery):
+    """
+    Description: Searches event by id given in form, if none is given searches default event. Redirects to the event dashboard
+    Possible response codes: 200
+    """
     events = EventsFinder.get_all()
     
-    event = request.form.get('event', None)
+    #event = request.form.get('event', None)
+    event = query.event
     if(event is None):
         event = EventsFinder.get_default_event()
     else:
@@ -109,10 +123,15 @@ def search_activity_types():
     return render_template('admin/activities/activity_types_dashboard.html', events=events, event=event, error=None, role=current_user.role.name)
 
 
-@bp.get('/new-activity-type')
+@bp.get('/new-activity-type',responses={'500':APIError})
 @allowed_roles(['admin', 'activities_admin'])
-def add_activity_type_dashboard():
-    event_id = request.args.get('_event',None)
+def add_activity_type_dashboard(query:ActivityTypeQuery):
+    """
+    Description: Search event by id given in URL. Redirects to add activity type page of said event
+    Possible response codes: 200, 500
+    """
+    #event_id = request.args.get('activity',None)
+    event_id = query.event_id
     event = EventsFinder.get_from_external_id(event_id)
     if event is None:
         return APIErrorValue('No event found! Please set an event in the menu "Events"').json(500)
@@ -120,15 +139,25 @@ def add_activity_type_dashboard():
     return render_template('admin/activities/add_activity_type.html', event=event, error=None)
 
 
-@bp.post('/new-activity-type')
+@bp.post('/new-activity-type',responses={'500':APIError})
 @allowed_roles(['admin', 'activities_admin'])
-def create_activity_type():
-    name = request.form.get('name')
-    description = request.form.get('description')
-    price = request.form.get('price')
-    show_in_home = request.form.get('show_in_home')
-    show_in_schedule = request.form.get('show_in_schedule')
-    show_in_app = request.form.get('show_in_app')
+def create_activity_type(form:ActivityTypeForm):
+    """
+    Description: Create activity type with parameters given in a form to an event with an id also given in form
+    Possible response codes: 200, 302, 500
+    """
+    #name = request.form.get('name')
+    #description = request.form.get('description')
+   # price = request.form.get('price')
+   # show_in_home = request.form.get('show_in_home')
+   # show_in_schedule = request.form.get('show_in_schedule')
+   # show_in_app = request.form.get('show_in_app')
+    name = form.name
+    description = form.description
+    price = form.price
+    show_in_home = form.show_in_home
+    show_in_schedule = form.show_in_schedule
+    show_in_app = form.show_in_app
 
     if show_in_home == 'True':
         show_in_home = True
@@ -145,7 +174,7 @@ def create_activity_type():
     else:
         show_in_app = False
 
-    event_id = request.form.get('event_id')
+    event_id = form.event_id
     event = EventsFinder.get_from_external_id(event_id)
     if event is None:
         return APIErrorValue('No event found! Please set an event in the menu "Events"').json(500)
@@ -171,6 +200,10 @@ def create_activity_type():
 @bp.get('/activities/types/<string:activity_type_external_id>')
 @allowed_roles(['admin', 'activities_admin'])
 def get_activity_type(path: ActivityTypePath):
+    """
+    Description: Directs user to update activity type page
+    Possible response codes: 200
+    """
     activity_type = ActivityTypesFinder.get_from_external_id(path.activity_type_external_id)
 
     return render_template('admin/activities/update_activity_type.html', \
@@ -180,13 +213,23 @@ def get_activity_type(path: ActivityTypePath):
 
 @bp.post('/activities/types/<string:activity_type_external_id>')
 @allowed_roles(['admin', 'activities_admin'])
-def update_activity_type(path: ActivityTypePath):
-    name = request.form.get('name')
-    description = request.form.get('description')
-    price = request.form.get('price')
-    show_in_home = request.form.get('show_in_home')
-    show_in_schedule = request.form.get('show_in_schedule')
-    show_in_app = request.form.get('show_in_app')
+def update_activity_type(path: ActivityTypePath, form: ActivityTypeForm):
+    """
+    Description: Update activity type with parameters given in a form to an event with an id also given in form
+    Possible response codes: 200, 302
+    """
+    #name = request.form.get('name')
+    #description = request.form.get('description')
+    #price = request.form.get('price')
+    #show_in_home = request.form.get('show_in_home')
+    #show_in_schedule = request.form.get('show_in_schedule')
+    #show_in_app = request.form.get('show_in_app')
+    name= form.name
+    description= form.description
+    price= form.price
+    show_in_home= form.show_in_home
+    show_in_schedule = form.show_in_schedule
+    show_in_app = form.show_in_app
 
     if show_in_home == 'True':
         show_in_home = True
@@ -222,9 +265,13 @@ def update_activity_type(path: ActivityTypePath):
 
     return redirect(url_for('admin_api.activity_types_dashboard'))
 
-@bp.get('/activities/types/<string:activity_type_external_id>/delete')
+@bp.get('/activities/types/<string:activity_type_external_id>/delete',responses={'500':APIError})
 @allowed_roles(['admin', 'activities_admin'])
 def delete_activity_type(path: ActivityTypePath):
+    """
+    Description: Deletes activity type with id given by external id
+    Possible response codes: 200, 302, 500
+    """
     activity_type = ActivityTypesFinder.get_from_external_id(path.activity_type_external_id)
 
     if activity_type.activities:
@@ -255,13 +302,18 @@ def delete_activity_type(path: ActivityTypePath):
 
 @bp.get('/new-activity')
 @allowed_roles(['admin', 'activities_admin'])
-def add_activity_dashboard():
+def add_activity_dashboard(query:ActivityQuery):
+    """
+    Description: Directs user to add activity page
+    Possible response codes: 200
+    """
     companies = CompaniesFinder.get_all()
     speakers = SpeakersFinder.get_all()
     tags = TagsFinder.get_all()
     rewards = RewardsFinder.get_all_rewards()
 
-    event_id = request.args.get('event',None)
+    #event_id = request.args.get('event',None)
+    event_id = query.event_id
     if(event_id is None):
         event = EventsFinder.get_default_event()
     else:
@@ -289,23 +341,42 @@ def add_activity_dashboard():
         error=None)
 
 
-@bp.post('/new-activity')
+@bp.post('/new-activity',responses={'500':APIError})
 @allowed_roles(['admin', 'activities_admin'])
-def create_activity():
-    name = request.form.get('name')
-    description = request.form.get('description')
-    location = request.form.get('location')
-    day = request.form.get('day')
-    time = request.form.get('time')
-    end_time = request.form.get('end_time')
-    registration_link = request.form.get('registration_link')
-    registration_open = request.form.get('registration_open')
-    points = request.form.get('points') or None
-    quest = request.form.get('quest')
-    chat = request.form.get('chat')
-    zoom_link = request.form.get('zoom_url')
-    reward_id = request.form.get('reward') or None
-    moderator = request.form.get('moderator') or None
+def create_activity(form: ActivityForm):
+    """
+    Description: Creates activity with parameters given in form
+    Possible response codes: 200, 500
+    """
+    # name = request.form.get('name')
+    # description = request.form.get('description')
+    # location = request.form.get('location')
+    # day = request.form.get('day')
+    # time = request.form.get('time')
+    # end_time = request.form.get('end_time')
+    # registration_link = request.form.get('registration_link')
+    # registration_open = request.form.get('registration_open')
+    # points = request.form.get('points') or None
+    # quest = request.form.get('quest')
+    # chat = request.form.get('chat')
+    # zoom_link = request.form.get('zoom_url')
+    # reward_id = request.form.get('reward') or None
+    # moderator = request.form.get('moderator') or None
+
+    name = form.name
+    description = form.description
+    location = form.location
+    day = form.day
+    time = form.time
+    end_time = form.end_time
+    registration_link = form.registration_link
+    registration_open = form.registration_open
+    points = form.points
+    quest = form.quest
+    chat = form.chat
+    zoom_link = form.zoom_link
+    reward_id = form.reward_id
+    moderator = form.moderator
 
     if registration_open == 'True':
         registration_open = True
@@ -319,7 +390,8 @@ def create_activity():
 
     chat_type = ActivityChatEnum[chat]
 
-    activity_type_external_id = request.form.get('type')
+    #activity_type_external_id = request.form.get('type')
+    activity_type_external_id = form.activity_type_external_id
     activity_type = ActivityTypesFinder.get_from_external_id(uuid.UUID(activity_type_external_id))
     event = activity_type.event
 
@@ -374,10 +446,14 @@ def create_activity():
             error="Failed to create activity! Maybe it already exists :)")
 
     # extract company names and speaker names from parameters
-    companies = request.form.getlist('company')
-    zoom_urls = request.form.getlist('url')
-    speakers = request.form.getlist('speaker')
-    tags = request.form.getlist('tag')
+    # companies = request.form.getlist('company')
+    # zoom_urls = request.form.getlist('url')
+    # speakers = request.form.getlist('speaker')
+    # tags = request.form.getlist('tag')
+    companies = form.companies
+    zoom_urls = form.zoom_urls
+    speakers = form.speakers
+    tags = form.tags
     job_fair_booth = ActivityTypesFinder.get_from_name('Job Fair Booth')
 
     # if company names where provided
@@ -439,13 +515,17 @@ def create_activity():
 @bp.get('/activity/<string:activity_external_id>')
 @allowed_roles(['admin', 'activities_admin'])
 def get_activity(path: ActivityPath):
+    """
+    Description: Finds the activity labeled by the external id and directs admin user to the "update activity" page of said activity
+    Possible response codes: 200 
+    """
     activity = ActivitiesFinder.get_from_external_id(path.activity_external_id)
     companies = CompaniesFinder.get_all()
     speakers = SpeakersFinder.get_all()
     tags = TagsFinder.get_all()
     rewards = RewardsFinder.get_all_rewards()
 
-    event = EventsFinder.get_from_parameters({"default": True})
+    event = EventsFinder.get_from_parameters({"default": True})     
     if event is None or len(event) == 0:
         error = 'No default event found! Please set a default event in the menu "Events"'
         return render_template('admin/activities/activities_dashboard.html', event=None, error=error, role=current_user.role.name)
@@ -482,9 +562,13 @@ def get_activity(path: ActivityPath):
         error=None)
 
 
-@bp.post('/activity/<string:activity_external_id>')
+@bp.post('/activity/<string:activity_external_id>',responses={'500':APIError})
 @allowed_roles(['admin', 'activities_admin'])
-def update_activity(path: ActivityPath):
+def update_activity(path: ActivityPath, form:ActivityForm):
+    """
+    Description: Updates activity labeled by external id with parameters given in a form
+    Possible response codes: 200, 302, 500
+    """
     activity = ActivitiesFinder.get_from_external_id(path.activity_external_id)
     company_activities = ActivitiesFinder.get_company_activities_from_activity_id(path.activity_external_id)
     speaker_activities = ActivitiesFinder.get_speaker_activities_from_activity_id(path.activity_external_id)
@@ -493,20 +577,34 @@ def update_activity(path: ActivityPath):
     if activity is None:
         return APIErrorValue('Couldnt find activity').json(500)
 
-    name = request.form.get('name')
-    description = request.form.get('description')
-    location = request.form.get('location')
-    day = request.form.get('day')
-    time = request.form.get('time')
-    end_time = request.form.get('end_time')
-    registration_link = request.form.get('registration_link')
-    registration_open = request.form.get('registration_open')
-    points = request.form.get('points') or None
-    quest = request.form.get('quest')
-    chat = request.form.get('chat')
-    zoom_link = request.form.get('zoom_url')
-    reward_id = request.form.get('reward') or None
-    moderator = request.form.get('moderator') or None
+    # name = request.form.get('name')
+    # description = request.form.get('description')
+    # location = request.form.get('location')
+    # day = request.form.get('day')
+    # time = request.form.get('time')
+    # end_time = request.form.get('end_time')
+    # registration_link = request.form.get('registration_link')
+    # registration_open = request.form.get('registration_open')
+    # points = request.form.get('points') or None
+    # quest = request.form.get('quest')
+    # chat = request.form.get('chat')
+    # zoom_link = request.form.get('zoom_url')
+    # reward_id = request.form.get('reward') or None
+    # moderator = request.form.get('moderator') or None
+    name = form.name
+    description = form.description
+    location = form.location
+    day = form.day
+    time = form.time
+    end_time = form.end_time
+    registration_link = form.registration_link
+    registration_open = form.registration_open
+    points = form.points
+    quest = form.quest
+    chat = form.chat
+    zoom_link = form.zoom_link
+    reward_id = form.reward_id
+    moderator = form.moderator
 
     if time > end_time is None:
         return APIErrorValue('Activity starting time after ending time').json(500)
@@ -523,7 +621,8 @@ def update_activity(path: ActivityPath):
 
     chat_type = ActivityChatEnum[chat] if chat else None
 
-    activity_type_external_id = request.form.get('type')
+    #activity_type_external_id = request.form.get('type')
+    activity_type_external_id = form.activity_type_external_id
     activity_type = ActivityTypesFinder.get_from_external_id(uuid.UUID(activity_type_external_id))
 
     updated_activity = ActivitiesHandler.update_activity(
@@ -558,10 +657,16 @@ def update_activity(path: ActivityPath):
             TagsHandler.delete_activity_tag(activity_tag)
 
     # extract company names and speaker names from parameters
-    companies = request.form.getlist('company')
-    zoom_urls = request.form.getlist('url')
-    speakers = request.form.getlist('speaker')
-    tags = request.form.getlist('tag')
+    # companies = request.form.getlist('company')
+    # zoom_urls = request.form.getlist('url')
+    # speakers = request.form.getlist('speaker')
+    # tags = request.form.getlist('tag')
+
+    companies = form.companies
+    zoom_urls = form.zoom_urls
+    speakers = form.speakers
+    tags = form.tags
+
 
     # if company names where provided
     if companies:
@@ -652,9 +757,13 @@ def update_activity(path: ActivityPath):
     return redirect(url_for('admin_api.activities_dashboard'))
 
 
-@bp.get('/activity/<string:activity_external_id>/delete')
+@bp.get('/activity/<string:activity_external_id>/delete', responses={'500':APIError})
 @allowed_roles(['admin', 'activities_admin'])
 def delete_activity(path: ActivityPath):
+    """
+    Description: Deletes activity labeled by external id
+    Possible response codes: 200, 302, 500
+    """
     activity = ActivitiesFinder.get_from_external_id(path.activity_external_id)
     company_activities = ActivitiesFinder.get_company_activities_from_activity_id(path.activity_external_id)
     speaker_activities = ActivitiesFinder.get_speaker_activities_from_activity_id(path.activity_external_id)
@@ -681,24 +790,33 @@ def delete_activity(path: ActivityPath):
     else:
         return render_template('admin/activities/update_activity.html', activity=activity, error="Failed to delete activity!")
 
-@bp.post('/activity/<string:activity_external_id>/code')
+@bp.post('/activity/<string:activity_external_id>/code',responses={'201':ActivityCodes, '404':APIError})
 @allowed_roles(['admin', 'activities_admin'])
-def generate_codes(path: ActivityPath):
+def generate_codes(path: ActivityPath, form:ActivityCodesNumber):
+    """
+    Description: Creates codes (number of codes specified by admin user in a form) to activity labeled by external id
+    Possible response codes: 201, 404
+    """
     activity = ActivitiesFinder.get_from_external_id(path.activity_external_id)
     if activity is None:
         return APIErrorValue('Couldnt find activity').json(404)
 
-    number = request.form.get('number', 1)
+    #number = request.form.get('number', 1)
+    number = form.number
     activity_codes = []
     
     for _ in range(int(number)):
         activity_codes.append(ActivityCodesHandler.create_activity_code(activity_id=activity.id).code)
 
-    return jsonify(activity_codes)
+    return jsonify(activity_codes),201
 
-@bp.post('/activity/<string:activity_external_id>/codes-delete')
+@bp.post('/activity/<string:activity_external_id>/codes-delete',responses={'201':SuccessStr,'404':APIError, '500': APIError})
 @allowed_roles(['admin', 'activities_admin'])
 def delete_activity_code(path: ActivityPath):
+    """
+    Description: Deletes all codes with parametres given in URL of the activity labeled by external id
+    Possible response codes: 201, 404, 500
+    """
     activity = ActivitiesFinder.get_from_external_id(path.activity_external_id)
     if activity is None:
         return APIErrorValue('Couldnt find activity').json(404)
@@ -708,13 +826,17 @@ def delete_activity_code(path: ActivityPath):
         if not ActivityCodesHandler.delete_activity_code(code):
             return jsonify("Failed"), 500
 
-    return jsonify("Success")
+    return jsonify("Success"),201
 
-@bp.post('/code/<string:code>/delete')
+@bp.post('/code/<string:code>/delete', responses={'201':SuccessDict,'404':APIError})
 @allowed_roles(['admin', 'activities_admin'])
 def delete_code(path: CodePath):
+    """
+    Description: Deletes code given in URL
+    Possible response codes: 201, 404
+    """
     code = ActivityCodesFinder.get_from_code(path.code)
     if code is None:
         return APIErrorValue('Couldnt find code').json(404)
 
-    return jsonify({'success':ActivityCodesHandler.delete_activity_code(code)})
+    return jsonify({'success':ActivityCodesHandler.delete_activity_code(code)}),201

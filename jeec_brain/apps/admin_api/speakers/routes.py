@@ -6,6 +6,7 @@ from jeec_brain.handlers.companies_handler import CompaniesHandler
 from jeec_brain.apps.auth.wrappers import allowed_roles, allow_all_roles
 from jeec_brain.values.api_error_value import APIErrorValue
 from jeec_brain.schemas.admin_api.speakers.schemas import *
+from jeec_brain.schemas.admin_api.schemas import *
 from flask_login import current_user
 from jeec_brain.services.files.rename_image_service import RenameImageService
 
@@ -13,6 +14,10 @@ from jeec_brain.services.files.rename_image_service import RenameImageService
 @bp.get('/speakers')
 @allow_all_roles
 def speakers_dashboard():
+    """
+    Description: Directs user to speakers' dashboard with all speakers
+    Possible response codes: 200
+    """
     speakers_list = SpeakersFinder.get_all()
 
     if len(speakers_list) == 0:
@@ -24,8 +29,13 @@ def speakers_dashboard():
 
 @bp.post('/speakers')
 @allow_all_roles
-def search_speaker():
-    name = request.form.get('name')
+def search_speaker(form: SpeakerSearchForm):
+    """
+    Description: Searches for speakers in "speaker dashboard" according to a name given by the user in a form
+    Possible response codes: 200
+    """
+    #name = request.form.get('name')
+    name=form.name
     speakers_list = SpeakersFinder.search_by_name(name)
 
     if len(speakers_list) == 0:
@@ -38,22 +48,30 @@ def search_speaker():
 @bp.get('/new-speaker')
 @allowed_roles(['admin', 'speakers_admin'])
 def add_speaker_dashboard():
+    """
+    Description: Directs user to "add speaker" page
+    Possible response codes: 200
+    """
     return render_template('admin/speakers/add_speaker.html')
 
 
 @bp.post('/new-speaker')
 @allowed_roles(['admin', 'speakers_admin'])
-def create_speaker():
-    name = request.form.get('name')
-    company = request.form.get('company')
-    company_link = request.form.get('company_link')
-    position = request.form.get('position')
-    country = request.form.get('country')
-    bio = request.form.get('bio')
-    linkedin_url = request.form.get('linkedin_url')
-    youtube_url = request.form.get('youtube_url')
-    website_url = request.form.get('website_url')
-    spotlight = request.form.get('spotlight')
+def create_speaker(form: SpeakerForm):
+    """
+    Description: Creates a new speaker with parameters given in a form and images given in submitted files
+    Possible response codes: 200, 302
+    """
+    name = form.name
+    company = form.company
+    company_link = form.company_link
+    position = form.position
+    country = form.country
+    bio = form.bio
+    linkedin_url = form.linkedin_url
+    youtube_url = form.youtube_url
+    website_url = form.website_url
+    spotlight = form.spotlight
 
     if spotlight == 'True':
         spotlight = True
@@ -98,6 +116,10 @@ def create_speaker():
 @bp.get('/speaker/<string:speaker_external_id>')
 @allowed_roles(['admin', 'speakers_admin'])
 def get_speaker(path: SpeakerPath):
+    """
+    Description: Directs user to "update speaker" page of the speaker labeled by the id given in the URL
+    Possible response codes: 200
+    """
     speaker = SpeakersFinder.get_from_external_id(path.speaker_external_id)
 
     image_path = SpeakersHandler.find_image(speaker.name)
@@ -113,25 +135,39 @@ def get_speaker(path: SpeakerPath):
         error=None)
 
 
-@bp.post('/speaker/<string:speaker_external_id>')
+@bp.post('/speaker/<string:speaker_external_id>', responses={'500': APIError})
 @allowed_roles(['admin', 'speakers_admin'])
-def update_speaker(path: SpeakerPath):
+def update_speaker(path: SpeakerPath, form: SpeakerForm):
+    """
+    Description: Updates speaker labeled by id in URL with parameters given in a form and images given in submitted files
+    Possible response codes: 200, 302, 500
+    """
 
     speaker = SpeakersFinder.get_from_external_id(path.speaker_external_id)
 
     if speaker is None:
         return APIErrorValue('Couldnt find speaker').json(500)
 
-    name = request.form.get('name')
-    company = request.form.get('company')
-    company_link = request.form.get('company_link')
-    position = request.form.get('position')
-    country = request.form.get('country')
-    bio = request.form.get('bio')
-    linkedin_url = request.form.get('linkedin_url')
-    youtube_url = request.form.get('youtube_url')
-    website_url = request.form.get('website_url')
-    spotlight = request.form.get('spotlight')
+    # name = request.form.get('name')
+    # company = request.form.get('company')
+    # company_link = request.form.get('company_link')
+    # position = request.form.get('position')
+    # country = request.form.get('country')
+    # bio = request.form.get('bio')
+    # linkedin_url = request.form.get('linkedin_url')
+    # youtube_url = request.form.get('youtube_url')
+    # website_url = request.form.get('website_url')
+    # spotlight = request.form.get('spotlight')
+    name = form.name
+    company = form.company
+    company_link = form.company_link
+    position = form.position
+    country = form.country
+    bio = form.bio
+    linkedin_url =form.linkedin_url
+    youtube_url = form.youtube_url
+    website_url = form.website_url
+    spotlight = form.spotlight
 
     if spotlight == 'True':
         spotlight = True
@@ -201,9 +237,13 @@ def update_speaker(path: SpeakerPath):
     return redirect(url_for('admin_api.speakers_dashboard'))
 
 
-@bp.get('/speaker/<string:speaker_external_id>/delete')
+@bp.get('/speaker/<string:speaker_external_id>/delete', responses={'500': APIError})
 @allowed_roles(['admin', 'speakers_admin'])
 def delete_speaker(path: SpeakerPath):
+    """
+    Description: Deletes speaker labeled by id in URL
+    Possible response codes: 200, 302, 500
+    """
     speaker = SpeakersFinder.get_from_external_id(path.speaker_external_id)
 
     if speaker is None:
