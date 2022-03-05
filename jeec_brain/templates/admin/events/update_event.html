@@ -179,6 +179,22 @@
 
       <br>
 
+      Show prizes in the JEEC website:
+      <p>
+        <label style="margin-right: 20px;">
+          <input class="with-gap" name="show_prizes" type="radio" value="True"
+            {% if event.show_prizes is sameas true %} checked {% endif %} />
+          <span>Yes</span>
+        </label>
+        <label>
+          <input class="with-gap" name="show_prizes" type="radio" value="False"
+            {% if event.show_prizes is sameas false %} checked {% endif %} />
+          <span>No</span>
+        </label>
+      </p>
+
+      <br>
+
       Logo:
       {% if logo is not sameas none %}
       <img src="{{ logo }}" class="company-logo centered-image">

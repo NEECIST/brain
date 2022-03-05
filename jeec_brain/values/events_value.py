@@ -31,7 +31,8 @@ class EventsValue(ValueComposite):
 				"activity_types": ActivityTypesValue(ActivityTypesFinder.get_from_parameters({'event_id':event.id, 'show_in_schedule':True})).to_dict(),
 				"dates": EventsHandler.get_event_dates(event),
 				"show_schedule": event.show_schedule,
-				"show_registrations": event.show_registrations
+				"show_registrations": event.show_registrations,
+				"show_prizes": event.show_prizes
 			}
 			events_array.append(event_value)
 		self.serialize_with(data=events_array)
