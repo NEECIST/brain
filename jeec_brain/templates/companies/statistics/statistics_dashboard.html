@@ -60,12 +60,15 @@
         <button id="general_btn" class="waves-effect blue lighten-2 btn-large dashboard-btn" style="width: 250px;"><i
                 class="large material-icons left">info</i>General</button>
         <button id="interactions_btn" class="waves-effect blue lighten-2 btn-large dashboard-btn"
-            style="margin-left: 50px; margin-right: 50px; width: 250px;"
+            style="margin-left: 50px; width: 250px;"
             onclick="graph_type='interactions'; graph_plot();"><i
                 class="large material-icons left">autorenew</i>Interactions</button>
         <button id="participations_btn" class="waves-effect blue lighten-2 btn-large dashboard-btn"
-            style="width: 250px;" onclick="graph_type='participations'; graph_plot();"><i
+            style="margin-left: 50px; margin-right: 50px; width: 250px;" onclick="graph_type='participations'; graph_plot();"><i
                 class="large material-icons left">group</i>Participations</button>
+        <button id="job_fair_btn" class="waves-effect blue lighten-2 btn-large dashboard-btn"
+            style="width: 250px;" onclick="graph_type='Job Fair Booth'; graph_plot();"><i
+                class="large material-icons left">storefront</i>Job Fair</button>
     </div>
 
     <div id="general" class="total_stats" style="margin-top: 100px;">
@@ -106,7 +109,6 @@
                     onclick="mode='course'; graph_plot();">By Course</button>
             </div>
         </div>
-
         <div>
             <center>
                 <div class="test" style="margin-top: 50px">
@@ -114,43 +116,99 @@
                 </div>
             </center>
         </div>
-
+    
         <div style="width: 400px;"></div>
     </div>
-
+    <div id="job_fair_statistics" class="stats_app" style="margin-top: 90px">
+        <div>
+            <div class="row">
+                <div class="input-field col s2" style="margin-left: 30px; width: 300px;">
+                    <select name="activity" id="activity" class="form-control">
+                        <option value="Total" selected="selected">Total</option>
+                        {% for _activity in total_interactions_by_activity.keys() %}
+                        <option value="{{ _activity}}">{{_activity}}</option>
+                        {% endfor %}
+                    </select>
+                    <label>Activities</label>
+                </div>
+            </div>
+            <div class="row">
+                <button id="activity_button" class="waves-effect waves-light btn back-btn left graph-btn"
+                    onclick="mode='day'; graph_plot()">By Day</button>
+            </div>
+            <div class="row">
+                <button class="waves-effect waves-light btn back-btn left graph-btn"
+                    onclick="mode='year'; graph_plot();">By Year</button>
+            </div>
+            <div class="row">
+                <button class="waves-effect waves-light btn back-btn left graph-btn"
+                    onclick="mode='course'; graph_plot();">By Course</button>
+            </div>
+        </div>
+        <div>
+            <center>
+                <div class="test" style="margin-top: 50px">
+                    <div id="tester_job"></div>
+                </div>
+            </center>
+        </div>
+    
+        <div style="width: 400px;"></div>
+    </div>
+  
     <script>
         $(function () {
             $("#rest").hide();
+            $("#job_fair_statistics").hide();
 
             $("#general_btn").click(function () {
                 $("#general").show();
                 $("#rest").hide();
+                $("#job_fair_statistics").hide();
             });
 
             $("#interactions_btn").click(function () {
                 $("#general").hide();
                 $("#rest").show();
+                $("#job_fair_statistics").hide();
             });
 
             $("#participations_btn").click(function () {
                 $("#general").hide();
                 $("#rest").show();
+                $("#job_fair_statistics").hide();
+            });
+            $("#job_fair_btn").click(function () {
+                $("#general").hide();
+                $("#rest").hide();
+                $("#job_fair_statistics").show();
             });
         });
+        
+        
 
-        let interactions_element = document.getElementById('interactions_div');
-        let participations_element = document.getElementById('participations_div');
+        // let interactions_element = document.getElementById('interactions_div');
+        // let participations_element = document.getElementById('participations_div');
 
-        function show_interactions() {
-            participations_element.style.display = "none";
-            interactions_element.style.display = "block";
-        }
+        // function show_interactions() {
+        //     participations_element.style.display = "none";
+        //     interactions_element.style.display = "block";
+        // }
 
-        function show_participations() {
-            interactions_element.style.display = "none";
-            participations_element.style.display = "block";
-        }
-
+        // function show_participations() {
+        //     interactions_element.style.display = "none";
+        //     participations_element.style.display = "block";
+        // }
+        // function show_job_fair() {
+        //     interactions_element.style.display = "none";
+        //     participations_element.style.display = "block";
+        // }
+       
+        
+        let job_fair_by_day = {{ job_fair_by_day| tojson}};
+        let job_fair_by_year = {{ job_fair_by_year| tojson}};
+        let job_fair_by_course = {{ job_fair_by_course| tojson}};
+        
 
         let total_interactions_by_course = {{ total_interactions_by_course| tojson}};
         let total_interactions_by_activity = {{ total_interactions_by_activity| tojson}};
@@ -190,7 +248,6 @@
             title: "Total interactions by activity"
         };
 
-
         function replot(target_data) {
             graph_element = document.getElementById('tester');
             if (target_data) {
@@ -203,7 +260,26 @@
             else {
                 graph_element.innerHTML = "<p>No Data!</p>";
             }
-
+        }
+        function replot_job(target_data) {
+           
+            graph_element = document.getElementById('tester_job');
+            if (target_data) {
+                graph_element.innerHTML = "";
+                data[0].values = Object.values(target_data);
+                data[0].labels = Object.keys(target_data);
+                data[0].sort = false;
+                console.log(data[0].values)
+                console.log(data[0].labels)
+                layout.title = graph_type + " by " + mode;
+                layout.traceorder = "normal"
+                layout.bordercolor = "#400"
+                console.log(data)
+                Plotly.newPlot('tester_job', data, layout);
+            }
+            else {
+                graph_element.innerHTML = "<p>No Data!</p>";
+            }
         }
 
         var graph_type = "interactions"
@@ -223,7 +299,7 @@
                     replot(total_interactions_by_activity);
                 }
             }
-            else {
+            else if(graph_type === "participations") {
                 if (mode === "course") {
                     replot(participations_by_course[$('#activity').val()]);
                 }
@@ -232,6 +308,19 @@
                 }
                 else if (mode === "activity") {
                     replot(total_participations_by_activity);
+                }   
+            }
+            else{
+                
+                if (mode === "course") {
+                    replot_job(job_fair_by_course[$('#activity').val()]);
+                }
+                else if (mode === "year") {
+                    replot_job(job_fair_by_year[$('#activity').val()]);
+                }
+                else if(mode === "day"){
+
+                    replot_job(job_fair_by_day[$('#activity').val()]);
                 }
             }
         }

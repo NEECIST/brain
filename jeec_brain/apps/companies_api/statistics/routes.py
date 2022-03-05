@@ -23,6 +23,8 @@ from sqlalchemy import func
 
 from datetime import datetime
 
+def funcao_manhosa(item):
+    return item[4]
 
 @bp.get('/statistics')
 @require_company_login
@@ -36,6 +38,8 @@ def statistics_dashboard(company_user):
     interested_students = StudentsFinder.get_company_students(company_user.company)
     company_activities = ActivitiesFinder.get_activities_from_company_and_event(company_user.company, event)
     company = company_user.company
+    now = datetime.utcnow()
+    this_year = now.strftime('%Y')
 
     interactions = db_session.query(Logs) \
                      .join(Activities, Logs.entrypoint.contains(Activities.name)) \
@@ -52,6 +56,9 @@ def statistics_dashboard(company_user):
     total_interactions_by_year = {}
     interactions_by_course = {}
     interactions_by_year = {}
+    job_fair_by_day = {}
+    job_fair_by_year = {}
+    job_fair_by_course = {}
     for interaction_type in interactions:
         total_interactions += interaction_type[3]
 
@@ -100,29 +107,76 @@ def statistics_dashboard(company_user):
         .group_by(Activities.name, Students.course, Students.entry_year, Activities.day) \
         .all()
 
+
     total_participations = 0
     total_participations_by_activity = {}
     total_participations_by_course = {}
-    total_participations_by_year = {}
+    total_participations_by_year = {} 
     participations_by_course = {}
     participations_by_year = {}
+    total_job_fair_by_day = {}
+    total_job_fair_by_year = {}
+    total_job_fair_by_course = {}
+
+    # print("Anmes do sorte",participations)
+
+    participations.sort(key=funcao_manhosa)
+
+    # print("Despois do sorte",participations)
+
     for participation_type in participations:
+
+        # print(participation_type)
+       
         total_participations += participation_type[3]
 
         if "Booth" in participation_type[0]:
+            
             week_day = participation_type[4][-3:]
+            date = participation_type[4].split(",")[0]
+            # print(date)
+            year = date[-4:]
             participation_type = list(participation_type)
+           
             if week_day == "Mon":
-                participation_type[0] = "Job Fair Monday"
+                participation_type[0] = "Job Fair Monday" + (f" ({date})")
             elif week_day == "Tue":
-                participation_type[0] = "Job Fair Tuesday"
+                participation_type[0] = "Job Fair Tuesday" + (f" ({date})")
             elif week_day == "Wed":
-                participation_type[0] = "Job Fair Wednesday"
+                participation_type[0] = "Job Fair Wednesday" + (f" ({date})")
             elif week_day == "Thu":
-                participation_type[0] = "Job Fair Thursday"
+                participation_type[0] = "Job Fair Thursday" + (f" ({date})")
             elif week_day == "Fri":
-                participation_type[0] = "Job Fair Friday"
+                participation_type[0] = "Job Fair Friday" + (f" ({date})")
 
+            if this_year == year:
+                if participation_type[1] not in  total_job_fair_by_course:
+                    total_job_fair_by_course[participation_type[1]] = participation_type[3]
+                else:
+                    total_job_fair_by_course[participation_type[1]] += participation_type[3]
+
+                if participation_type[2] not in total_job_fair_by_year:
+                    total_job_fair_by_year[participation_type[2]] = participation_type[3]
+                else:
+                    total_job_fair_by_year[participation_type[2]] += participation_type[3]
+
+                if participation_type[0] not in total_job_fair_by_day:
+                    total_job_fair_by_day[participation_type[0]] = participation_type[3]
+                else:
+                    total_job_fair_by_day[participation_type[0]] += participation_type[3]
+                    
+                job_fair_by_day[participation_type[0]] = {}
+                job_fair_by_day[participation_type[0]][participation_type[-1]] = participation_type[3]
+                print(job_fair_by_day)
+
+                job_fair_by_year[participation_type[0]] = {}
+                job_fair_by_year[participation_type[0]][participation_type[2]] = participation_type[3]
+
+                job_fair_by_course[participation_type[0]] = {}
+                job_fair_by_course[participation_type[0]][participation_type[1]] = participation_type[3]
+            
+
+            
         if participation_type[0] not in total_participations_by_activity:
             total_participations_by_activity[participation_type[0]] = participation_type[3]
 
@@ -153,12 +207,17 @@ def statistics_dashboard(company_user):
             total_participations_by_year[participation_type[2]] = participation_type[3]
         else:
             total_participations_by_year[participation_type[2]] += participation_type[3]
-
+    
     interactions_by_course["Total"] = total_interactions_by_course;
     interactions_by_year["Total"] = total_interactions_by_year;
 
     participations_by_course["Total"] = total_participations_by_course;
     participations_by_year["Total"] = total_participations_by_year;
+
+    job_fair_by_day["Total"]= total_job_fair_by_day;
+    job_fair_by_year["Total"]= total_job_fair_by_year;
+    job_fair_by_course["Total"]= total_job_fair_by_course;
+
 
     return render_template('companies/statistics/statistics_dashboard.html', \
                            participations_by_course=participations_by_course, \
@@ -177,4 +236,7 @@ def statistics_dashboard(company_user):
                            company_activities=company_activities,\
                            interactions=interactions,\
                            participations=participations,\
+                           job_fair_by_day = job_fair_by_day,\
+                           job_fair_by_year = job_fair_by_year,\
+                           job_fair_by_course = job_fair_by_course,\
                            error=None)
