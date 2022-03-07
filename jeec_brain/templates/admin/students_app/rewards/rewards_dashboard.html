@@ -78,6 +78,10 @@
     <button class="waves-effect lighten-2 btn add-btn right"><i
         class="material-icons left">edit</i>JEECPOT Rewards</button>
   </form>
+  <form action="{{ url_for('admin_api.lootboxes_dashboard') }}" method="get">
+    <button class="waves-effect lighten-2 btn add-btn right"><i
+        class="material-icons left">edit</i>Lootboxes</button>
+  </form>
   <br><br>
   {% endif %}
 

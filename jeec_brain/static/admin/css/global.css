@@ -429,3 +429,10 @@ button:hover {
     color: white;
     overflow-wrap: break-word;
 }
+
+
+/* PARA LOOTBOXES */
+.lootbox-icon {
+    max-height: 50px;
+    max-width: 50px;
+}

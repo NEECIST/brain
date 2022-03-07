@@ -7,6 +7,8 @@ from jeec_brain.finders.levels_finder import LevelsFinder
 from jeec_brain.finders.tags_finder import TagsFinder
 from jeec_brain.finders.rewards_finder import RewardsFinder
 from jeec_brain.finders.events_finder import EventsFinder
+from jeec_brain.finders.lootbox_finder import LootboxFinder
+from jeec_brain.handlers.lootbox_rewards_handler import LootboxRewardsHandler
 from jeec_brain.handlers.students_handler import StudentsHandler
 from jeec_brain.handlers.squads_handler import SquadsHandler
 from jeec_brain.handlers.levels_handler import LevelsHandler
@@ -515,6 +517,143 @@ def update_jeecpot_reward(path: JeecpotRewardsPath):
             return APIErrorValue('Failed to update reward').json(500)
 
     return render_template('admin/students_app/rewards/jeecpot_rewards_dashboard.html', error=None, jeecpot_rewards=jeecpot_rewards, rewards=RewardsFinder.get_all_rewards(), current_user=current_user)
+
+
+@bp.get('/lootboxes')
+@allowed_roles(['admin'])
+def lootboxes_dashboard():
+    lootbox_names = LootboxFinder.get_all_lootbox_names()
+    lootbox_counts = LootboxFinder.get_all_lootbox_reward_count()
+    lootbox_icons=[]
+    for lootbox in lootbox_names:
+        lootbox_icons.append(LootboxRewardsHandler.find_image(str(lootbox.external_id)))
+
+    return render_template('admin/students_app/rewards/lootboxes_dashboard.html', error=None, lootboxes=zip(lootbox_names,lootbox_counts,lootbox_icons), current_user=current_user)
+
+
+@bp.get('/new-lootbox')
+@allowed_roles(['admin'])
+def add_lootbox_dashboard():
+    rewards = RewardsFinder.get_all_rewards()
+    for reward in rewards:
+        print(reward.external_id)
+    return render_template('admin/students_app/rewards/add_lootbox.html', error=None, rewards=rewards, current_user=current_user)
+
+
+@bp.post('/new-lootbox')
+@allowed_roles(['admin'])
+def create_lootbox():
+    name = request.form.get('name', None)
+    active = request.form.get('active', None)
+    repeatable = request.form.get('repeatable', None)
+    
+    rewards = RewardsFinder.get_all_rewards()
+    
+    if LootboxFinder.get_lootbox_rewards_from_parameters({"name":name}):
+        return render_template('admin/students_app/rewards/add_lootbox.html', error='Lootbox already exists', rewards=rewards, current_user=current_user)
+        
+    
+    if active == 'True':
+        active = True
+    else:
+        active = False
+        
+    if repeatable == 'True':
+        repeatable = True
+    else:
+        repeatable = False
+
+    lootbox = LootboxRewardsHandler.create_lootbox(
+        name=name,
+        active=active,
+        repeatable = repeatable
+        )
+    
+    if(lootbox is None):
+        return render_template('admin/students_app/rewards/add_lootbox.html', error='Failed to create lootbox', rewards=rewards, current_user=current_user)
+    
+    if request.files:
+        image_file = request.files.get('lootbox_icon', None) 
+
+        if image_file:
+            result, msg = LootboxRewardsHandler.upload_image(image_file, str(lootbox.external_id))
+            if result == False:
+                LootboxRewardsHandler.delete_lootbox(lootbox)
+                return render_template('admin/students_app/rewards/add_lootbox.html', error=msg, rewards=rewards, current_user=current_user)
+            
+        mobile_file = request.files.get('mobile_lootbox_icon', None) 
+
+        if mobile_file:
+            image_name = f'{lootbox.external_id}_mobile'
+            result, msg = LootboxRewardsHandler.upload_image(mobile_file, image_name)
+            if result == False:
+                LootboxRewardsHandler.delete_lootbox(lootbox)
+                return render_template('admin/students_app/rewards/add_lootbox.html', error=msg, rewards=rewards, current_user=current_user)
+    
+    return redirect(url_for('admin_api.lootboxes_dashboard'))
+    
+    
+@bp.get('/lootbox/<string:lootbox_external_id>')
+@allowed_roles(['admin'])
+def update_lootbox_dashboard(path:LootboxPath):
+    external_id = path.lootbox_external_id
+    if not external_id:
+        redirect(url_for('admin_api.lootboxes_dashboard'))
+        
+    lootbox = LootboxFinder.get_lootbox_from_external_id(external_id)
+    lootbox_icon = LootboxRewardsHandler.find_image(str(lootbox.external_id))
+    image_name = f'{lootbox.external_id}_mobile'
+    lootbox_mobile_icon = LootboxRewardsHandler.find_image(image_name)
+    
+    return render_template('admin/students_app/rewards/update_lootbox.html', lootbox=lootbox, icon=lootbox_icon, mobile_icon=lootbox_mobile_icon)
+    
+    
+@bp.post('/lootbox/<string:lootbox_external_id>')
+@allowed_roles(['admin'])
+def update_lootbox(path:LootboxPath):
+    external_id = path.lootbox_external_id
+    if not external_id:
+        redirect(url_for('admin_api.lootboxes_dashboard'))
+        
+    lootbox = LootboxFinder.get_lootbox_from_external_id(external_id)
+    lootbox_icon = LootboxRewardsHandler.find_image(str(lootbox.external_id))
+    image_name = f'{lootbox.external_id}_mobile'
+    lootbox_mobile_icon = LootboxRewardsHandler.find_image(image_name)
+    
+    return redirect(url_for('admin_api.lootboxes_dashboard'))
+    # return render_template('admin/students_app/rewards/update_lootbox.html', lootbox=lootbox, icon=lootbox_icon, mobile_icon=lootbox_mobile_icon)
+
+
+@bp.post('/lootbox/<string:lootbox_external_id>/delete')
+@allowed_roles(['admin'])
+def delete_lootbox(path:LootboxPath):
+
+    lootbox = LootboxFinder.get_lootbox_from_external_id(path.lootbox_external_id)
+    lootboxes = LootboxFinder.get_lootbox_rewards_from_parameters({"name":lootbox.name})
+    for lootbox in lootboxes:
+        LootboxRewardsHandler.delete_lootbox(lootbox)
+    
+    return redirect(url_for('admin_api.lootboxes_dashboard'))
+
+
+@bp.get('/lootbox/<string:lootbox_external_id>/winners')
+@allowed_roles(['admin'])
+def winners_lootbox(path:LootboxPath):
+    
+    return jsonify({"msg":"agora é meter aqui a tabela coma info toda do lootbox_student"})
+
+
+# @bp.post('/lootbox/<string:lootbox_name>/<int:reward_id>')
+# @allowed_roles(['admin'])
+# def update_lootbox():
+#     type = request.form.get('type', None)
+
+#     reward = LootboxRewardsHandler.update_lootbox(type=type)
+#     if(reward is None):
+#         return render_template('admin/students_app/rewards/add_lootbox.html', error='Failed to create reward')
+
+#     return render_template('admin/students_app/rewards/lootboxes_dashboard.html', error=None, lootboxes=LootboxFinder.get_all_lootbox_names(), current_user=current_user)
+
 
 @bp.get('/squad-rewards')
 @allowed_roles(['admin'])

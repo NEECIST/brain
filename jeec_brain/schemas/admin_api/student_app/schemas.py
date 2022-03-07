@@ -21,3 +21,6 @@ class SquadPath(BaseModel):
 
 class StudentPath(BaseModel):
     student_external_id: UUID = Field(..., description="Student external ID")
+    
+class LootboxPath(BaseModel):
+    lootbox_external_id: UUID = Field(..., description="Lootbox external ID")

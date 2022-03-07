@@ -1,0 +1,152 @@
+<html>
+
+<head>
+  <title>Brain</title>
+  <link rel="stylesheet" href="/static/admin/css/global.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
+  <script src="/static/jquery-3.6.0.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no,maximum-scale=1">
+  <link rel="shortcut icon" href="data:image/x-icon;," type="image/x-icon">
+  <link rel="shortcut icon" type="image/x-icon" href="./static/j_logo.png">
+
+  <link href="https://fonts.googleapis.com/css?family=Karla|Lato|Roboto|Raleway|Source+Sans+Pro" rel="stylesheet">
+
+  <script type="text/javascript">
+    $(document).ready(function () {
+      $('select').formSelect();
+    });
+  </script>
+</head>
+
+<body>
+  <div class="nav-bar">
+    <a href="{{ url_for('admin_api.dashboard') }}"><img class="jeec-logo-mobile" src="/static/brain.png"></a>
+
+    <form action="{{ url_for('admin_api.admin_logout') }}" method="get">
+      <button class="waves-effect red lighten-2 btn-small right logout-btn"><i class="material-icons left">lock</i>Log
+        out</button>
+    </form>
+
+    <a target="_blank" rel="noopener noreferrer" href="https://jeec.ist" method="get">
+      <button class="waves-effect waves-light btn-small right" style="margin-top: -3px; margin-right: 50px;"><i
+          class="large material-icons left">web</i>Visit website</button>
+    </a>
+  </div>
+
+  <div class="section-header">
+    <h2>Lootbox Management</h2>
+    <p>Manage the rewards for lootboxes</p>
+  </div>
+
+  <form action="{{ url_for('admin_api.rewards_dashboard') }}" method="get">
+    <button class="waves-effect waves-light btn back-btn left"><i
+        class="material-icons left">arrow_back</i>back</button>
+  </form>
+
+  <div class="section-title center-align" style="margin-top:90px;">
+    List of Lootboxes
+  </div>
+
+  <div class="list">
+    {% if error is not none %}
+    <blockquote class="create-error">
+      {{ error }}
+    </blockquote>
+    {% else %}
+
+    {% if current_user.role.name == 'admin' %}
+    <form action="{{ url_for('admin_api.add_lootbox_dashboard') }}" method="get">
+      <button class="waves-effect blue lighten-2 btn add-btn right"><i
+          class="material-icons left">add</i>Lootbox</button>
+    </form>
+    <br><br>
+    {% endif %}
+
+    <table class="striped">
+      <thead>
+        <tr>
+          <th>Lootbox</th>
+          <th>Icon</th>
+          <th>Quantity</th>
+          <th>Delivered</th>
+          <th>Opened</th>
+          <th>Active</th>
+          <th>Repeatable</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for lootbox,count,icon in lootboxes %}
+        <tr>
+          <td>
+            <b>
+              {{ lootbox.name }}
+            </b>
+          </td>
+
+          <td>
+            <img src="{{ icon }}" class="lootbox-icon">
+          </td>
+
+          <td>
+            {{ count.reward_count }}
+          </td>
+
+          <td>
+            {{ count.reward_count }} <!-- ALTERAR QUANDO TIVER LOOTBOX_STUDENT A FUNCIONAR -->
+          </td>
+
+          <td>
+            {{ count.reward_count }} <!-- ALTERAR QUANDO TIVER LOOTBOX_STUDENT A FUNCIONAR -->
+          </td>
+
+          <td>
+            {% if lootbox.active is sameas true %}
+              <i class="material-icons icon-green">check</i>
+            {% else %}
+              <i class="material-icons icon-red">clear</i>
+            {% endif %}
+          </td>
+
+          <td>
+            {% if lootbox.repeatable is sameas true %}
+              <i class="material-icons icon-green">check</i>
+            {% else %}
+              <i class="material-icons icon-red">clear</i>
+            {% endif %}
+          </td>
+
+          {% if current_user.role.name == 'admin' %}
+          <td>
+            <form action="/admin/lootbox/{{lootbox.external_id}}/winners" method="get">
+              <button title="Lootbox winner list" class="waves-effect waves-light btn-floating blue"><i
+                  class="material-icons left">assessment</i>Lootbox Statistics</button>
+            </form>
+          </td>
+          <td>
+            <form action="/admin/lootbox/{{lootbox.external_id}}" method="get">
+              <button title="Edit Lootbox" class="waves-effect waves-light btn-floating"><i
+                  class="material-icons left">edit</i>Edit</button>
+            </form>
+          </td>
+          <!-- <td>
+            <form action="/admin/lootbox/{{lootbox.external_id}}/delete" method="post">
+              <button title="Delete Lootbox" class="waves-effect waves-light btn-floating red"><i
+                  class="material-icons left">delete</i>Delete</button>
+            </form>
+          </td> -->
+          {% endif %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+  </div>
+</body>
+
+</html>

@@ -24,6 +24,7 @@ from jeec_brain.finders.activities_finder import ActivitiesFinder
 from jeec_brain.finders.tags_finder import TagsFinder
 from jeec_brain.finders.companies_finder import CompaniesFinder
 from jeec_brain.finders.rewards_finder import RewardsFinder
+from jeec_brain.finders.lootbox_finder import LootboxFinder
 from jeec_brain.finders.levels_finder import LevelsFinder
 from jeec_brain.finders.users_finder import UsersFinder
 
@@ -42,13 +43,15 @@ from jeec_brain.values.jeecpot_rewards_value import JeecpotRewardsValue
 from jeec_brain.values.levels_value import LevelsValue
 from jeec_brain.values.companies_value import CompaniesValue
 from jeec_brain.values.partners_value import PartnersValue
+from jeec_brain.values.lootbox_rewards_value import LootboxRewardsValue
 
 from jeec_brain.apps.auth.wrappers import requires_student_auth
 
 from jeec_brain.schemas.student_api.schemas import APIError, ActivityList, CompaniesList, CompanyChatRoom, \
     CompanyName, Companylist, Event, JeecpotRewards, LevelDetailList, PartnerCompany, PartnerName, Rewards, \
     SearchQuery, DateQuery, SquadDetailList, SquadInvitationsReceivedList, SquadInvitationsSentList, SquadRewardsList, \
-    StudentInfoList, SuccessResponse, UrlInput, CreateSquad, TagsInput, TagDelete, Member, MemberList, Invitation, Invitation_external
+    StudentInfoList, SuccessResponse, UrlInput, CreateSquad, TagsInput, TagDelete, Member, MemberList, Invitation, Invitation_external,\
+    LootboxRewardList
 
 # Login routes
 @bp.get('/login')
@@ -833,6 +836,22 @@ def get_jeecpot_rewards(student):
     jeecpot_rewards = RewardsFinder.get_all_jeecpot_rewards()
 
     return JeecpotRewardsValue(jeecpot_rewards[0], student).json(200)
+
+@bp.get('/lootbox-rewards', responses={'200':LootboxRewardList})
+# @requires_student_auth
+# def get_jeecpot_rewards(student):
+def get_lootbox_rewards():
+    """Retrieve the lootbox rewards for the current student
+
+    <b>Returns:</b>
+        LootboxRewardsValue: Returns list with the jeecpot rewards for the current student
+    """
+    lootbox_rewards = LootboxFinder.get_all_lootbox_rewards()
+    if not lootbox_rewards:
+        return jsonify({"data":"nothing"})
+
+    # return LootboxRewardsValue(lootbox_rewards[0], student).json(200)
+    return LootboxRewardsValue(lootbox_rewards[0], None).json(200)
 
 @bp.get('/chat-token', responses={'200':SuccessResponse, '500':APIError})
 @requires_student_auth

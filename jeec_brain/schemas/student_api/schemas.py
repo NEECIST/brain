@@ -229,3 +229,11 @@ class JeecpotRewards(BaseModel):
     king_networking_winner: bool = Field(None, description="Jeecpot King of networking winner")
     cv_platform_raffle_reward: Dict[str,Rewards] = Field(None, description="Jeecpot CV platform raffle reward")
     cv_platform_raffle_winner: bool = Field(None, description="Jeecpot CV platform raffle winner")
+    
+class LootboxReward(BaseModel):
+    reward: Dict[str,Rewards] = Field(None, description="Lootbox reward")
+    type: str = Field(None, description="Lootbox reward type")
+    winner: bool = Field(None, description="Lootbox reward if winner")
+    
+class LootboxRewardList(BaseModel):
+    list: Dict[str,LootboxReward] = Field(None, description="Lootbox reward list")

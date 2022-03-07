@@ -1,0 +1,198 @@
+<html>
+
+<head>
+  <title>Brain</title>
+  <link rel="stylesheet" href="/static/admin/css/global.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
+  <script src="/static/jquery-3.6.0.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no,maximum-scale=1">
+  <link rel="shortcut icon" href="data:image/x-icon;," type="image/x-icon">
+  <link rel="shortcut icon" type="image/x-icon" href="./static/j_logo.png">
+
+  <link href="https://fonts.googleapis.com/css?family=Karla|Lato|Roboto|Raleway|Source+Sans+Pro" rel="stylesheet">
+  
+  <script type="text/javascript">
+    $(document).ready(function () {
+      $('select').formSelect();
+    });
+  </script>
+</head>
+
+<body>
+  <div class="nav-bar">
+    <a href="{{ url_for('admin_api.dashboard') }}"><img class="jeec-logo-mobile" src="/static/brain.png"></a>
+
+    <form action="{{ url_for('admin_api.admin_logout') }}" method="get">
+      <button class="waves-effect red lighten-2 btn-small right logout-btn"><i class="material-icons left">lock</i>Log
+        out</button>
+    </form>
+
+    <a target="_blank" rel="noopener noreferrer" href="https://jeec.ist" method="get">
+      <button class="waves-effect waves-light btn-small right" style="margin-top: -3px; margin-right: 50px;"><i
+          class="large material-icons left">web</i>Visit website</button>
+    </a>
+  </div>
+
+  <div class="section-header">
+    <h2>Lootbox Management</h2>
+    <p>Add a new lootbox</p>
+  </div>
+
+  <form action="{{ url_for('admin_api.lootboxes_dashboard') }}" method="get">
+    <button class="waves-effect waves-light btn back-btn left"><i
+        class="material-icons left">arrow_back</i>back</button>
+  </form>
+
+  <br>
+
+  <div class="create-form">
+    {% if error is not none %}
+    <blockquote class="create-error">
+      {{ error }}
+    </blockquote>
+    {% endif %}
+
+
+    <form class="col s12" action="/admin/new-lootbox" method="post" enctype="multipart/form-data">
+      <div class="row">
+        <div class="input-field col s4">
+          <input id="name" name="name" type="text" class="validate" maxlength="20" required>
+          <label for="name">Name</label>
+        </div>
+        <div class="input-field col s2">
+          Active:
+          <p>
+            <label style="margin-right: 20px;">
+              <input class="with-gap" name="active" type="radio" value="True" />
+              <span>Yes</span>
+            </label>
+            <label>
+              <input class="with-gap" name="active" type="radio" value="False" checked />
+              <span>No</span>
+            </label>
+          </p>
+        </div>
+        <div class="input-field col s2">
+          Repeatable:
+          <p>
+            <label style="margin-right: 20px;">
+              <input class="with-gap" name="repeatable" type="radio" value="True" />
+              <span>Yes</span>
+            </label>
+            <label>
+              <input class="with-gap" name="repeatable" type="radio" value="False" checked />
+              <span>No</span>
+            </label>
+          </p>
+          <br>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="file-field input-field" style="width:500px;">
+          <div class="btn">
+            <i class="material-icons left">image</i>
+            <span>Lootbox icon</span>
+            <input id="lootbox_icon" type="file" name="lootbox_icon" required>
+          </div>
+          <div class="file-path-wrapper">
+            <input class="file-path validate" type="text" placeholder="use .png with <200kB">
+          </div>
+        </div>
+
+        <div class="file-field input-field" style="width:500px;">
+          <div class="btn">
+            <i class="material-icons left">smartphone</i>
+            <span>Mobile Lootbox icon</span>
+            <input id='mobile_lootbox_icon' type="file" name="mobile_lootbox_icon" required>
+          </div>
+          <div class="file-path-wrapper">
+            <input class="file-path validate" type="text" placeholder="use .png with <80kB">
+          </div>
+        </div>
+      </div>
+
+      <button type="submit" class="waves-effect blue lighten-2 btn add-btn right"><i
+          class="material-icons left">save</i>Save Lootbox</button>
+    </form>
+  </div>
+</body>
+
+ <script>
+  var lootbox_icon = document.getElementById("lootbox_icon");
+  lootbox_icon.onchange = function(e) {
+    var files = e.currentTarget.files;
+    for (var x in files) {
+      if((files[x].size/1024).toFixed(4) > 200){
+        alert("File is too big!");
+        lootbox_icon.value = "";
+      };
+    };
+  }; 
+  var mobile_lootbox_icon = document.getElementById("mobile_lootbox_icon");
+  mobile_lootbox_icon.onchange = function(e) {
+    var files = e.currentTarget.files;
+    for (var x in files) {
+      if((files[x].size/1024).toFixed(4) > 80){
+        alert("File is too big!");
+        mobile_lootbox_icon.value = "";
+      };
+    };
+  }; 
+</script> 
+
+
+</html>
+
+
+<!--
+  {% for level in levels %}
+          <tr id='tr_1'>
+            <td><b>
+                {{ level.value }}
+              </b></td>
+  
+            <td>
+              {{ ns.points }}
+            </td>
+  
+            <td>
+              {{ level.points }}
+            </td>
+  
+            <td>
+              {{ level.points - ns.points }}
+            </td>
+  
+            <td>
+              <form action="/admin/level/{{level.external_id.hex}}" method="post" onsubmit="confirm('Are you sure you want to change the reward?');">
+                <select name="reward" class="form-control" onchange="this.form.submit()">
+                  {% for reward in rewards %}
+                  <option value="{{ reward.external_id.hex }}"
+                    {% if level.reward is not none and reward.id|int() == level.reward.id|int() %} selected {% endif %}>
+                    {{ reward.name }}</option>
+                  {% endfor %}
+                  <option value="" {% if level.reward is none %} selected {% endif %}></option>
+                </select>
+              </form>
+            </td>
+  
+            <td>
+              {% if ((levels|length > 0) and (loop.index == levels|length)) and current_user.role.name == 'admin' %}
+              <form action="/admin/level/{{level.external_id.hex}}/delete" method="post"
+                onsubmit="return confirm('Are you sure you want to delete this level?');">
+                <button title="Delete level" class="waves-effect waves-light red btn-floating"><i
+                    class="material-icons left">delete</i>Delete</button>
+              </form>
+              {% endif %}
+            </td>
+          </tr>
+          {% set ns.points = level.points + 1  %}
+          {% endfor %}
+-->
