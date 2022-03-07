@@ -6,6 +6,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 
+  <script src="/static/jquery-3.6.0.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
 
   <meta charset="utf-8">
@@ -57,8 +58,17 @@
     </blockquote>
     {% endif %}
 
+    {% if total_percentage > 100 %}
+      <blockquote class="create-error">
+        Total probability of rewards over 100%!
+      </blockquote>
+    {% elif total_percentage < 100 %}
+      <blockquote class="create-error">
+        Total probability of rewards under 100%!
+      </blockquote>
+    {% endif %}
 
-    <form class="col s12" action="/admin/lootbox/{{lootbox.external_id}}" method="post" enctype="multipart/form-data">
+    <form id="update_lootbox" class="col s12" action="/admin/lootbox/{{lootbox.external_id}}" method="post" enctype="multipart/form-data">
       <div class="row">
         <div class="input-field col s4">
           <input id="name" name="name" type="text" class="validate" value="{{ lootbox.name }}" maxlength="20" required>
@@ -152,87 +162,164 @@
           </div>
         </div>
       </div>
+    </form>
+    <form id="new_reward_lootbox" new_action="" method="post" enctype="multipart/form-data">
+      <h5>Add Rewards:</h5>
 
+      <table class="striped" id="reward_table">
+        <thead>
+          <tr>
+            <th>Reward</th>
+            <th>Active</th>
+            <th>Repeatable</th>
+            <th>Probability</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if current_user.role.name == 'admin' %}
+              <tr>
+                  <td>
+                    <select form="new_reward_lootbox" name="new_reward" id="new_reward" required>
+                      <option value="" selected></option>
+                      {% for reward in rewards %}
+                        <option value="{{reward.external_id}}">{{reward.name}}</option>
+                      {% endfor %}
+                    </select>
+                  </td>
+          
+                  <td>
+                    <div class="checkbox" id="reward_active_div"><label>
+                        <input form="new_reward_lootbox" id="new_reward_active" name="new_reward_active" type="checkbox"/>
+                        <span> </span>
+                    </label></div>
+                  </td>
+          
+                  <td>
+                    <div class="checkbox" id="reward_repeatable_div"><label>
+                        <input form="new_reward_lootbox" id="new_reward_repeatable" name="new_reward_repeatable" type="checkbox"/>
+                        <span> </span>
+                    </label></div>
+                  </td>
+          
+                  <td>
+                    <input form="new_reward_lootbox" id="new_reward_probability" name="new_reward_probability" type="number" value="" min="0" max="100" required>
+                  </td>
+          
+                  <td>
+                    <button form="new_reward_lootbox" type="submit" id="add_reward_button" title="Add Reward" class="waves-effect waves-light btn-floating"><i
+                        class="material-icons left">add</i>Add</button>
+                  </td>
+              </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </form>
 
+    <h5>Rewards:</h5>
 
-
-
+    {% if lootbox_rewards is sameas none %}
+      <blockquote class="create-error">
+        No rewards added yet! Please add one
+      </blockquote>
+    {% else %}
+      <table class="striped" id="reward_table">
+        <thead>
+          <tr>
+            <th>Reward</th>
+            <th>Active</th>
+            <th>Repeatable</th>
+            <th>Probability</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if current_user.role.name == 'admin' %}
+            {% for lootbox_reward in lootbox_rewards %}
+              </tr>
+              <tr>
+                <td>
+                  <select name="reward_list" id="reward_list" disabled>
+                    {% for reward in rewards %}
+                      {% if reward.id|int() == lootbox_reward.reward_id|int() %} 
+                        <option value="{{lootbox_reward.external_id}}" selected disabled>{{reward.name}}</option>
+                      {% endif %}
+                    {% endfor %}
+                    </option>
+                  </select>
+                </td>
+        
+                <td>
+                  {% if lootbox_reward.active is sameas true %}
+                    <i class="material-icons icon-green">check</i>
+                  {% else %}
+                    <i class="material-icons icon-red">clear</i>
+                  {% endif %}
+                </td>
       
-      <button type="submit" class="waves-effect blue lighten-2 btn add-btn right"><i
-          class="material-icons left">save</i>Save Lootbox</button>
+                <td>
+                  {% if lootbox_reward.repeatable is sameas true %}
+                    <i class="material-icons icon-green">check</i>
+                  {% else %}
+                    <i class="material-icons icon-red">clear</i>
+                  {% endif %}
+                </td>
+        
+                <td>
+                  <input id="reward_probability" type="number" value="{{lootbox_reward.probability}}" min="0" max="100" disabled>
+                </td>
+        
+                <td>
+                  <form action="/admin/lootbox/{{lootbox_reward.external_id}}/delete/reward" method="post" enctype="multipart/form-data">
+                    <button id="remove_reward_button" title="Remove Reward" class="waves-effect waves-light btn-floating red"><i
+                        class="material-icons left">remove</i>Remove</button>
+                  </form>
+                </td>
+              </tr>
+            {% endfor %}
+            
+            </tr>
+            <tr>
+              <td>
+                Total Percentage:
+              </td>
+      
+              <td></td>
+    
+              <td></td>
+      
+              <td>
+                {{total_percentage}}
+              </td>
+      
+              <td></td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    {% endif %}
+
+
+    <button form="update_lootbox" type="submit" class="waves-effect blue lighten-2 btn add-btn right" style="margin-top: 20px;"><i
+        class="material-icons left">save</i>Save Lootbox</button>
+
+    <form action="/admin/lootbox/{{lootbox.external_id}}/delete" method="post">
+      <button class="waves-effect red darken-2 btn delete-btn"><i class="material-icons left">clear</i>Delete
+        lootbox</button>
     </form>
   </div>
 
-  <form action="/admin/lootbox/{{lootbox.external_id}}/delete" method="post">
-    <button class="waves-effect red darken-2 btn delete-btn"><i class="material-icons left">clear</i>Delete
-      lootbox</button>
-  </form>
 </body>
+<script>
+  
+  document.getElementById('new_reward').onchange = function() {
+    if (this.value != ""){
+      document.getElementById('new_reward_lootbox').action = "/admin/lootbox/{{lootbox.external_id}}/reward";
+    } else {
+      document.getElementById('new_reward_lootbox').action = "";
+    }
+  };
+
+
+</script>
+
 
 </html>
-
-<!-- adicionar rewards -->
-<!--
-<h5>Add Rewards:</h5>
-
-<table class="striped" id="reward_table">
-  <thead>
-    <tr>
-      <th>Reward</th>
-      <th>Active</th>
-      <th>Repeatable</th>
-      <th>Percentage</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% if current_user.role.name == 'admin' %}
-      <tr id='row_1'>
-        <td>
-          <select name="reward_list" id="reward_list" required>
-            <option value="" selected></option>
-            {% for reward in rewards %}
-              <option value="{{reward.external_id}}">{{reward.name}}</option>
-            {% endfor %}
-          </select>
-        </td>
-
-        <td>
-          <div class="checkbox" id="reward_active_div"><label>
-              <input id="reward_active" name="reward_active" type="checkbox"/>
-              <span> </span>
-          </label></div>
-        </td>
-
-        <td>
-          <div class="checkbox" id="reward_repeatable_div"><label>
-              <input id="reward_repeatable" name="reward_repeatable" type="checkbox"/>
-              <span> </span>
-          </label></div>
-        </td>
-
-        <td>
-          <input id="reward_percentage" type="number" value="" min="0" max="100" required>
-        </td>
-
-        <td>
-          <button id="remove_reward_button" onclick="removeRow()" title="Remove Reward" class="waves-effect waves-light btn-floating red"><i
-              class="material-icons left">remove</i>Remove</button>
-        </td>
-      </tr>
-      <tr id="add_row">
-        <td></td>
-
-        <td></td>
-
-        <td></td>
-
-        <td></td>
-
-        <td>
-          <button id="add_reward_button" title="Add Reward" class="waves-effect waves-light btn-floating"><i
-              class="material-icons left">add</i>Add</button>
-        </td>
-      </tr>
-    {% endif %}
-  </tbody>
-</table> -->

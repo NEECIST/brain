@@ -24,3 +24,4 @@ class StudentPath(BaseModel):
     
 class LootboxPath(BaseModel):
     lootbox_external_id: UUID = Field(..., description="Lootbox external ID")
+    

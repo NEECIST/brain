@@ -1,4 +1,4 @@
-from sqlalchemy import func
+from sqlalchemy import and_, func
 from jeec_brain.models.lootbox_rewards import LootboxRewards
 
 class LootboxFinder():
@@ -10,6 +10,14 @@ class LootboxFinder():
     @classmethod
     def get_all_lootbox_rewards(cls):
         return LootboxRewards.query.order_by(LootboxRewards.name).all()
+    
+    @classmethod
+    def get_lootbox_rewards(cls, lootbox_name):
+        return LootboxRewards.query.filter(and_(LootboxRewards.name == lootbox_name, LootboxRewards.reward_id != None)).order_by(LootboxRewards.probability).all()
+    
+    @classmethod
+    def get_lootbox_by_name(cls, lootbox_name):
+        return LootboxRewards.query.filter(and_(LootboxRewards.name == lootbox_name, LootboxRewards.reward_id == None)).order_by(LootboxRewards.name).first()
     
     @classmethod
     def get_all_lootbox_names(cls):

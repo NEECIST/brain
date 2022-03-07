@@ -16,7 +16,7 @@ class LootboxRewardsHandler():
 
     @classmethod
     def update_lootbox(cls, lootbox, **kwargs):
-        return UpdateLootboxRewardService(lootbox=lootbox, kwargs=kwargs).call()
+        return UpdateLootboxRewardService(lootbox_reward=lootbox, kwargs=kwargs).call()
 
     @classmethod
     def delete_lootbox(cls, lootbox):
@@ -33,6 +33,10 @@ class LootboxRewardsHandler():
             
             return DeleteLootboxRewardService(lootbox)
         return False
+
+    @classmethod
+    def delete_image(cls, image_name):
+        return DeleteImageService(image_name, 'static/lootboxes').call()
 
     @classmethod
     def upload_image(cls, file, image_name):
