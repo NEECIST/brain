@@ -61,11 +61,11 @@
 
     <form class="col s12" action="/admin/new-lootbox" method="post" enctype="multipart/form-data">
       <div class="row">
-        <div class="input-field col s4">
+        <div class="input-field col s5">
           <input id="name" name="name" type="text" class="validate" maxlength="20" required>
           <label for="name">Name</label>
         </div>
-        <div class="input-field col s2">
+        <div class="input-field col s5 right">
           Active:
           <p>
             <label style="margin-right: 20px;">
@@ -77,20 +77,6 @@
               <span>No</span>
             </label>
           </p>
-        </div>
-        <div class="input-field col s2">
-          Repeatable:
-          <p>
-            <label style="margin-right: 20px;">
-              <input class="with-gap" name="repeatable" type="radio" value="True" />
-              <span>Yes</span>
-            </label>
-            <label>
-              <input class="with-gap" name="repeatable" type="radio" value="False" checked />
-              <span>No</span>
-            </label>
-          </p>
-          <br>
         </div>
       </div>
 

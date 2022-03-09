@@ -1,3 +1,4 @@
+from jeec_brain.handlers.lootbox_handler import LootboxHandler
 from .. import bp
 from flask import render_template, current_app, request, redirect, url_for, jsonify
 from jeec_brain.values.api_error_value import APIErrorValue
@@ -522,13 +523,25 @@ def update_jeecpot_reward(path: JeecpotRewardsPath):
 @bp.get('/lootboxes')
 @allowed_roles(['admin'])
 def lootboxes_dashboard():
-    lootbox_names = LootboxFinder.get_all_lootbox_names()
-    lootbox_counts = LootboxFinder.get_all_lootbox_reward_count()
+    lootboxes = LootboxFinder.get_all_lootbox()
     lootbox_icons=[]
-    for lootbox in lootbox_names:
-        lootbox_icons.append(LootboxRewardsHandler.find_image(str(lootbox.external_id)))
-
-    return render_template('admin/students_app/rewards/lootboxes_dashboard.html', error=None, lootboxes=zip(lootbox_names,lootbox_counts,lootbox_icons), current_user=current_user)
+    lootbox_counts=[]
+    lootbox_percentages=[]
+    lootbox_delivered=[]
+    lootbox_opened=[]
+    for lootbox in lootboxes:
+        lootbox_icons.append(LootboxHandler.find_image(str(lootbox.external_id)))
+        rewards = LootboxFinder.get_rewards_from_lootbox(lootbox)
+        count = len(rewards)
+        lootbox_counts.append(count)
+        lootbox_percentages.append(0)
+        lootbox_delivered.append(0)
+        lootbox_opened.append(0)
+        if count != 0:
+            for reward in rewards:
+                lootbox_percentages[-1] += reward.probability
+        
+    return render_template('admin/students_app/rewards/lootboxes_dashboard.html', error=None, lootboxes=zip(lootboxes,lootbox_counts,lootbox_icons,lootbox_percentages,lootbox_delivered,lootbox_opened), current_user=current_user)
 
 
 @bp.get('/new-lootbox')
@@ -544,11 +557,10 @@ def add_lootbox_dashboard():
 def create_lootbox():
     name = request.form.get('name', None)
     active = request.form.get('active', None)
-    repeatable = request.form.get('repeatable', None)
     
     rewards = RewardsFinder.get_all_rewards()
     
-    if LootboxFinder.get_lootbox_rewards_from_parameters({"name":name}):
+    if LootboxFinder.get_lootbox_from_parameters({"name":name}):
         return render_template('admin/students_app/rewards/add_lootbox.html', error='Lootbox already exists', rewards=rewards, current_user=current_user)
         
     
@@ -556,16 +568,10 @@ def create_lootbox():
         active = True
     else:
         active = False
-        
-    if repeatable == 'True':
-        repeatable = True
-    else:
-        repeatable = False
 
-    lootbox = LootboxRewardsHandler.create_lootbox(
+    lootbox = LootboxHandler.create_lootbox(
         name=name,
         active=active,
-        repeatable = repeatable
         )
     
     if lootbox is None:
@@ -575,42 +581,63 @@ def create_lootbox():
         image_file = request.files.get('lootbox_icon', None) 
 
         if image_file:
-            result, msg = LootboxRewardsHandler.upload_image(image_file, str(lootbox.external_id))
+            result, msg = LootboxHandler.upload_image(image_file, str(lootbox.external_id))
             if result == False:
-                LootboxRewardsHandler.delete_lootbox(lootbox)
+                LootboxHandler.delete_lootbox(lootbox)
                 return render_template('admin/students_app/rewards/add_lootbox.html', error=msg, rewards=rewards, current_user=current_user)
             
         mobile_file = request.files.get('mobile_lootbox_icon', None) 
 
         if mobile_file:
             image_name = f'{lootbox.external_id}_mobile'
-            result, msg = LootboxRewardsHandler.upload_image(mobile_file, image_name)
+            result, msg = LootboxHandler.upload_image(mobile_file, image_name)
             if result == False:
-                LootboxRewardsHandler.delete_lootbox(lootbox)
+                LootboxHandler.delete_lootbox(lootbox)
                 return render_template('admin/students_app/rewards/add_lootbox.html', error=msg, rewards=rewards, current_user=current_user)
     
     return redirect(url_for('admin_api.lootboxes_dashboard'))
+
+
+@bp.post('/lootbox/<string:lootbox_external_id>/reward')
+@allowed_roles(['admin'])
+def new_reward_lootbox(path:LootboxPath):
+    lootbox_external_id = path.lootbox_external_id
+    reward_external_id = request.form.get('new_reward', None)
+    probability = request.form.get('new_reward_probability', None)
+
+    lootbox = LootboxFinder.get_lootbox_from_external_id(lootbox_external_id)
+    if lootbox is None:
+        return redirect(url_for('admin_api.lootboxes_dashboard'))
+    reward = RewardsFinder.get_reward_from_external_id(reward_external_id)
+    
+    new_lootbox_reward = LootboxRewardsHandler.create_lootbox_reward(
+        lootbox_id=lootbox.id,
+        reward_id=reward.id,
+        probability=probability
+    )
+        
+    return redirect(url_for('admin_api.update_lootbox_dashboard', lootbox_external_id = lootbox.external_id))
     
     
 @bp.get('/lootbox/<string:lootbox_external_id>')
 @allowed_roles(['admin'])
 def update_lootbox_dashboard(path:LootboxPath):
     lootbox = LootboxFinder.get_lootbox_from_external_id(path.lootbox_external_id)
-    print(lootbox, None)
     if lootbox is None:
         return redirect(url_for('admin_api.lootboxes_dashboard'))
         
-    lootbox_icon = LootboxRewardsHandler.find_image(str(lootbox.external_id))
+    lootbox_icon = LootboxHandler.find_image(str(lootbox.external_id))
     image_name = f'{lootbox.external_id}_mobile'
-    lootbox_mobile_icon = LootboxRewardsHandler.find_image(image_name)
+    lootbox_mobile_icon = LootboxHandler.find_image(image_name)
     rewards = RewardsFinder.get_all_rewards()
-    lootbox_rewards = LootboxFinder.get_lootbox_rewards(lootbox.name)
+    lootbox_rewards = LootboxFinder.get_rewards_from_lootbox(lootbox)
+    total_percentage = 0
+    
     if not lootbox_rewards:
         lootbox_rewards = None
-        
-    total_percentage = 0
-    for reward in lootbox_rewards:
-        total_percentage += reward.probability
+    else:
+        for reward in lootbox_rewards:
+            total_percentage += reward.probability
         
     return render_template('admin/students_app/rewards/update_lootbox.html', error=None, lootbox=lootbox, lootbox_rewards=lootbox_rewards, icon=lootbox_icon, mobile_icon=lootbox_mobile_icon, rewards=rewards, total_percentage=total_percentage)
     
@@ -624,55 +651,72 @@ def update_lootbox(path:LootboxPath):
         
     name = request.form.get('name', None)
     active = request.form.get('active', None)
-    repeatable = request.form.get('repeatable', None)
     
     if active == 'True':
         active = True
     else:
         active = False
-        
-    if repeatable == 'True':
-        repeatable = True
-    else:
-        repeatable = False
 
-    lootbox_updated = LootboxRewardsHandler.update_lootbox(
+    lootbox_updated = LootboxHandler.update_lootbox(
         lootbox=lootbox,
         name=name,
         active=active,
-        repeatable = repeatable
         )
     
     if request.files:
         image_file = request.files.get('lootbox_icon', None) 
 
         if image_file:
-            LootboxRewardsHandler.delete_image(str(lootbox_updated.external_id))
-            result, msg = LootboxRewardsHandler.upload_image(image_file, str(lootbox_updated.external_id))
+            LootboxHandler.delete_image(str(lootbox_updated.external_id))
+            result, msg = LootboxHandler.upload_image(image_file, str(lootbox_updated.external_id))
             if result == False:
-                lootbox_names = LootboxFinder.get_all_lootbox_names()
-                lootbox_counts = LootboxFinder.get_all_lootbox_reward_count()
+                lootboxes = LootboxFinder.get_all_lootbox()
                 lootbox_icons=[]
-                for lootbox in lootbox_names:
-                    lootbox_icons.append(LootboxRewardsHandler.find_image(str(lootbox.external_id)))
+                lootbox_counts=[]
+                lootbox_percentages=[]
+                lootbox_delivered=[]
+                lootbox_opened=[]
+                for lootbox in lootboxes:
+                    lootbox_icons.append(LootboxHandler.find_image(str(lootbox.external_id)))
+                    rewards = LootboxFinder.get_rewards_from_lootbox(lootbox)
+                    count = len(rewards)
+                    lootbox_counts.append(count)
+                    lootbox_percentages.append(0)
+                    lootbox_delivered.append(0)
+                    lootbox_opened.append(0)
+                    if count != 0:
+                        for reward in rewards:
+                            lootbox_percentages[-1] += reward.probability
                     
-                return render_template('admin/students_app/rewards/lootboxes_dashboard.html', error="Error uploading new Icon image!", lootboxes=zip(lootbox_names,lootbox_counts,lootbox_icons), current_user=current_user)
+                return render_template('admin/students_app/rewards/lootboxes_dashboard.html', error="Error uploading new Icon image!", lootboxes=zip(lootboxes,lootbox_counts,lootbox_icons,lootbox_percentages,lootbox_delivered,lootbox_opened), current_user=current_user)
             
         mobile_file = request.files.get('mobile_lootbox_icon', None) 
 
         if mobile_file:
             image_name = f'{lootbox_updated.external_id}_mobile'
-            LootboxRewardsHandler.delete_image(image_name)
-            result, msg = LootboxRewardsHandler.upload_image(mobile_file, image_name)
+            LootboxHandler.delete_image(image_name)
+            result, msg = LootboxHandler.upload_image(mobile_file, image_name)
             if result == False:
-                lootbox_names = LootboxFinder.get_all_lootbox_names()
-                lootbox_counts = LootboxFinder.get_all_lootbox_reward_count()
+                lootboxes = LootboxFinder.get_all_lootbox()
                 lootbox_icons=[]
-                for lootbox in lootbox_names:
-                    lootbox_icons.append(LootboxRewardsHandler.find_image(str(lootbox.external_id)))
+                lootbox_counts=[]
+                lootbox_percentages=[]
+                lootbox_delivered=[]
+                lootbox_opened=[]
+                for lootbox in lootboxes:
+                    lootbox_icons.append(LootboxHandler.find_image(str(lootbox.external_id)))
+                    rewards = LootboxFinder.get_rewards_from_lootbox(lootbox)
+                    count = len(rewards)
+                    lootbox_counts.append(count)
+                    lootbox_percentages.append(0)
+                    lootbox_delivered.append(0)
+                    lootbox_opened.append(0)
+                    if count != 0:
+                        for reward in rewards:
+                            lootbox_percentages[-1] += reward.probability
                     
-                return render_template('admin/students_app/rewards/lootboxes_dashboard.html', error="Error uploading new mobile Icon image!", lootboxes=zip(lootbox_names,lootbox_counts,lootbox_icons), current_user=current_user)
-            
+                return render_template('admin/students_app/rewards/lootboxes_dashboard.html', error="Error uploading new mobile Icon image!", lootboxes=zip(lootboxes,lootbox_counts,lootbox_icons,lootbox_percentages,lootbox_delivered,lootbox_opened), current_user=current_user)
+
     return redirect(url_for('admin_api.lootboxes_dashboard'))
 
 
@@ -681,9 +725,14 @@ def update_lootbox(path:LootboxPath):
 def delete_lootbox(path:LootboxPath):
 
     lootbox = LootboxFinder.get_lootbox_from_external_id(path.lootbox_external_id)
-    lootboxes = LootboxFinder.get_lootbox_rewards_from_parameters({"name":lootbox.name})
-    for lootbox in lootboxes:
-        LootboxRewardsHandler.delete_lootbox(lootbox)
+    if lootbox is None:
+        return redirect(url_for('admin_api.lootboxes_dashboard'))
+    
+    lootbox_rewards = LootboxFinder.get_rewards_from_lootbox(lootbox)
+    for lootbox_reward in lootbox_rewards:
+        LootboxRewardsHandler.delete_lootbox_reward(lootbox_reward)
+        
+    LootboxHandler.delete_lootbox(lootbox)
     
     return redirect(url_for('admin_api.lootboxes_dashboard'))
 
@@ -691,21 +740,21 @@ def delete_lootbox(path:LootboxPath):
 @bp.post('/lootbox/<string:lootbox_external_id>/delete/reward')
 @allowed_roles(['admin'])
 def delete_lootbox_reward(path:LootboxPath):
-
-    lootbox_reward = LootboxFinder.get_lootbox_from_external_id(path.lootbox_external_id)
-    if lootbox_reward is None:
-        # lootbox_names = LootboxFinder.get_all_lootbox_names()
-        # lootbox_counts = LootboxFinder.get_all_lootbox_reward_count()
-        # lootbox_icons=[]
-        # for lootbox in lootbox_names:
-        #     lootbox_icons.append(LootboxRewardsHandler.find_image(str(lootbox.external_id)))
-
-        # return render_template('admin/students_app/rewards/lootboxes_dashboard.html', error="No such reward to delete!", lootboxes=zip(lootbox_names,lootbox_counts,lootbox_icons), current_user=current_user)
+    
+    lootbox_reward_external_id = request.form.get('reward_external_id', None)
+    if lootbox_reward_external_id is None:
+        return redirect(url_for('admin_api.lootboxes_dashboard'))
         
+
+    lootbox_reward = LootboxFinder.get_lootbox_reward_from_external_id(lootbox_reward_external_id)
+    if lootbox_reward is None:
         return redirect(url_for('admin_api.lootboxes_dashboard'))
     
-    lootbox = LootboxFinder.get_lootbox_by_name(lootbox_reward.name)
-    LootboxRewardsHandler.delete_lootbox(lootbox_reward)
+    lootbox = LootboxFinder.get_lootbox_from_external_id(path.lootbox_external_id)
+    if lootbox is None:
+        return redirect(url_for('admin_api.lootboxes_dashboard'))
+        
+    LootboxRewardsHandler.delete_lootbox_reward(lootbox_reward)
     
     return redirect(url_for('admin_api.update_lootbox_dashboard', lootbox_external_id = lootbox.external_id))
 
@@ -716,53 +765,6 @@ def winners_lootbox(path:LootboxPath):
     
     return jsonify({"msg":"agora é meter aqui a tabela coma info toda do lootbox_student"})
 
-
-@bp.post('/lootbox/<string:lootbox_external_id>/reward')
-@allowed_roles(['admin'])
-def new_reward_lootbox(path:LootboxPath):
-    lootbox_external_id = path.lootbox_external_id
-    active = request.form.get('new_reward_active', None)
-    repeatable = request.form.get('new_reward_repeatable', None)
-    reward_external_id = request.form.get('new_reward', None)
-    probability = request.form.get('new_reward_probability', None)
-
-    if active == 'on':
-        active = True
-    else:
-        active = False
-        
-    if repeatable == 'on':
-        repeatable = True
-    else:
-        repeatable = False
-
-    lootbox = LootboxFinder.get_lootbox_from_external_id(lootbox_external_id)
-    reward = RewardsFinder.get_reward_from_external_id(reward_external_id)
-    
-    new_lootbox_reward = LootboxRewardsHandler.create_lootbox(
-        name=lootbox.name,
-        reward_id=reward.id,
-        active=active,
-        probability=probability,
-        repeatable=repeatable
-    )
-        
-    lootbox = LootboxFinder.get_lootbox_from_external_id(lootbox_external_id)
-    # lootbox_icon = LootboxRewardsHandler.find_image(str(lootbox.external_id))
-    # image_name = f'{lootbox.external_id}_mobile'
-    # lootbox_mobile_icon = LootboxRewardsHandler.find_image(image_name)
-    # rewards = RewardsFinder.get_all_rewards()
-    # lootbox_rewards = LootboxFinder.get_lootbox_rewards(lootbox.name)
-    # if not lootbox_rewards:
-    #     lootbox_rewards = None
-    # total_percentage = 0
-    # for reward in lootbox_rewards:
-    #     total_percentage += reward.probability
-    
-    # if(new_lootbox_reward is None):
-    #     return render_template('admin/students_app/rewards/update_lootbox.html', error='Failed to create reward', lootbox=lootbox, lootbox_rewards=lootbox_rewards, icon=lootbox_icon, mobile_icon=lootbox_mobile_icon, rewards=rewards, total_percentage=total_percentage)
-
-    return redirect(url_for('admin_api.update_lootbox_dashboard', lootbox_external_id = lootbox.external_id))
 
 @bp.get('/squad-rewards')
 @allowed_roles(['admin'])

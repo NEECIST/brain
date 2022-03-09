@@ -10,12 +10,12 @@ class LootboxRewards(db.Model, ModelMixin):
     reward = relationship('Rewards')
     reward_id = db.Column(db.Integer, db.ForeignKey('rewards.id', ondelete='SET NULL'))
     
-    name = db.Column(db.String(20), nullable = False)
-    # reward_type = db.Column(db.String(10), nullable = False)
+    lootbox_id = db.Column(db.Integer, db.ForeignKey('lootboxes.id', ondelete='SET NULL'))
+    lootbox = relationship('Lootboxes')
     
-    active = db.Column(db.Boolean, nullable = False, default = False)
+    # active = db.Column(db.Boolean, nullable = False, default = False)
     probability = db.Column(db.Float)
-    repeatable = db.Column(db.Boolean, nullable = False, default = False)
+    # repeatable = db.Column(db.Boolean, nullable = False, default = False)
 
     def __repr__(self):
-        return '{} lootbox. Reward:{}. Active:{}. Repeatable:{}. Probability:{}'.format(self.name, self.reward_id, self.active, self.repeatable, self.probability)
+        return '{} lootbox. Reward:{}. Probability:{}'.format(self.lootbox_id, self.reward_id, self.probability)

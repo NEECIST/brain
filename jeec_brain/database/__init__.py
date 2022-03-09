@@ -54,6 +54,9 @@ def create_tables():
     from jeec_brain.models.student_logins import StudentLogins
     from jeec_brain.models.student_referrals import StudentReferrals
     from jeec_brain.models.student_daily_points import StudentDailyPoints
+    from jeec_brain.models.lootbox import Lootboxes
+    from jeec_brain.models.lootbox_rewards import LootboxRewards
+    from jeec_brain.models.student_lootbox import StudentLootbox
 
     # Rewards
     from jeec_brain.models.rewards import Rewards

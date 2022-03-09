@@ -74,7 +74,7 @@
           <input id="name" name="name" type="text" class="validate" value="{{ lootbox.name }}" maxlength="20" required>
           <label for="name">Name</label>
         </div>
-        <div class="input-field col s2">
+        <div class="input-field col s5 right">
           Active:
           <p>
             <label style="margin-right: 20px;">
@@ -83,19 +83,6 @@
             </label>
             <label>
               <input class="with-gap" name="active" type="radio" value="False" {% if lootbox.active is sameas false %}checked{% endif %} />
-              <span>No</span>
-            </label>
-          </p>
-        </div>
-        <div class="input-field col s2">
-          Repeatable:
-          <p>
-            <label style="margin-right: 20px;">
-              <input class="with-gap" name="repeatable" type="radio" value="True" {% if lootbox.repeatable is sameas true %}checked{% endif %}/>
-              <span>Yes</span>
-            </label>
-            <label>
-              <input class="with-gap" name="repeatable" type="radio" value="False" {% if lootbox.repeatable is sameas false %}checked{% endif %}/>
               <span>No</span>
             </label>
           </p>
@@ -170,8 +157,6 @@
         <thead>
           <tr>
             <th>Reward</th>
-            <th>Active</th>
-            <th>Repeatable</th>
             <th>Probability</th>
           </tr>
         </thead>
@@ -185,20 +170,6 @@
                         <option value="{{reward.external_id}}">{{reward.name}}</option>
                       {% endfor %}
                     </select>
-                  </td>
-          
-                  <td>
-                    <div class="checkbox" id="reward_active_div"><label>
-                        <input form="new_reward_lootbox" id="new_reward_active" name="new_reward_active" type="checkbox"/>
-                        <span> </span>
-                    </label></div>
-                  </td>
-          
-                  <td>
-                    <div class="checkbox" id="reward_repeatable_div"><label>
-                        <input form="new_reward_lootbox" id="new_reward_repeatable" name="new_reward_repeatable" type="checkbox"/>
-                        <span> </span>
-                    </label></div>
                   </td>
           
                   <td>
@@ -227,7 +198,6 @@
           <tr>
             <th>Reward</th>
             <th>Active</th>
-            <th>Repeatable</th>
             <th>Probability</th>
           </tr>
         </thead>
@@ -248,27 +218,14 @@
                 </td>
         
                 <td>
-                  {% if lootbox_reward.active is sameas true %}
-                    <i class="material-icons icon-green">check</i>
-                  {% else %}
-                    <i class="material-icons icon-red">clear</i>
-                  {% endif %}
-                </td>
-      
-                <td>
-                  {% if lootbox_reward.repeatable is sameas true %}
-                    <i class="material-icons icon-green">check</i>
-                  {% else %}
-                    <i class="material-icons icon-red">clear</i>
-                  {% endif %}
-                </td>
-        
-                <td>
                   <input id="reward_probability" type="number" value="{{lootbox_reward.probability}}" min="0" max="100" disabled>
                 </td>
         
                 <td>
-                  <form action="/admin/lootbox/{{lootbox_reward.external_id}}/delete/reward" method="post" enctype="multipart/form-data">
+                  <form action="/admin/lootbox/{{lootbox.external_id}}/delete/reward" method="post" enctype="multipart/form-data">
+                    <div style="display:none;">
+                      <input id="reward_external_id" name="reward_external_id" type="text" class="validate" value="{{lootbox_reward.external_id}}" required>
+                    </div>
                     <button id="remove_reward_button" title="Remove Reward" class="waves-effect waves-light btn-floating red"><i
                         class="material-icons left">remove</i>Remove</button>
                   </form>
@@ -281,10 +238,6 @@
               <td>
                 Total Percentage:
               </td>
-      
-              <td></td>
-    
-              <td></td>
       
               <td>
                 {{total_percentage}}

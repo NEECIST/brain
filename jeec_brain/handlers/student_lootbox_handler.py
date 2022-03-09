@@ -1,8 +1,8 @@
 from flask import current_app
 # SERVICES
-from jeec_brain.services.rewards.create_student_lootbox_service import CreateStudentLootboxService
-from jeec_brain.services.rewards.update_student_lootbox_service import UpdateStudentLootboxService
-from jeec_brain.services.rewards.delete_student_lootbox_service import DeleteStudentLootboxService
+from jeec_brain.services.students.create_student_lootbox_service import CreateStudentLootboxService
+from jeec_brain.services.students.update_student_lootbox_service import UpdateStudentLootboxService
+from jeec_brain.services.students.delete_student_lootbox_service import DeleteStudentLootboxService
 
 class LootboxStudentHandler():
 

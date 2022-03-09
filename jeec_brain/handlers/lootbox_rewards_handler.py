@@ -11,37 +11,13 @@ from datetime import datetime, timedelta
 class LootboxRewardsHandler():
 
     @classmethod
-    def create_lootbox(cls, **kwargs):
+    def create_lootbox_reward(cls, **kwargs):
         return CreateLootboxRewardService(kwargs=kwargs).call()
 
     @classmethod
-    def update_lootbox(cls, lootbox, **kwargs):
+    def update_lootbox_reward(cls, lootbox, **kwargs):
         return UpdateLootboxRewardService(lootbox_reward=lootbox, kwargs=kwargs).call()
 
     @classmethod
-    def delete_lootbox(cls, lootbox):
-        lootbox_external_id = lootbox.external_id
-
-        if DeleteLootboxRewardService(lootbox_reward=lootbox).call():
-            for extension in current_app.config['ALLOWED_IMAGES']:
-
-                filename = f'{lootbox_external_id}.{extension}'
-                DeleteImageService(filename, 'static/lootboxes').call()
-
-                filename = f'{lootbox_external_id}_mobile.{extension}'
-                DeleteImageService(filename, 'static/lootboxes').call()
-            
-            return DeleteLootboxRewardService(lootbox)
-        return False
-
-    @classmethod
-    def delete_image(cls, image_name):
-        return DeleteImageService(image_name, 'static/lootboxes').call()
-
-    @classmethod
-    def upload_image(cls, file, image_name):
-        return UploadImageService(file, image_name, 'static/lootboxes').call()
-
-    @classmethod
-    def find_image(cls, image_name):
-        return FindImageService(image_name, 'static/lootboxes').call()
+    def delete_lootbox_reward(cls, lootbox_reward):
+        return DeleteLootboxRewardService(lootbox_reward).call()

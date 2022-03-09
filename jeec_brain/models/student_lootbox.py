@@ -7,12 +7,11 @@ from sqlalchemy import sql
 class StudentLootbox(db.Model, ModelMixin):
     __tablename__ = 'student_lootbox'
     
-    lootbox = relationship('LootboxRewards')
-    lootbox_id = db.Column(db.Integer, db.ForeignKey('lootbox_rewards.id', ondelete='CASCADE'), nullable = False)
-    reward_id = db.Column(db.Integer, db.ForeignKey('lootbox_rewards.reward_id', ondelete='SET NULL'))
-
+    lootbox_id = db.Column(db.Integer, db.ForeignKey('lootboxes.id', ondelete='SET NULL'))
+    lootbox = relationship('Lootboxes')
+    
+    winner_id = db.Column(db.Integer, db.ForeignKey('students.id', ondelete='SET NULL'), nullable = False)
     winner = relationship('Students')
-    winner_id = db.Column(db.Integer, db.ForeignKey('students.id', ondelete='CASCADE'), nullable = False)
 
     opened = db.Column(db.Boolean, nullable = False, default = False)
 
