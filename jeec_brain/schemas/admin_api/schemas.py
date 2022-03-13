@@ -29,8 +29,11 @@ class ActivityQuery(BaseModel):
     name: Optional[str] = Field(None, description="name")
     event: Optional[UUID] = Field(None, description = "event_id")
 
+class EventFinderForm(BaseModel):
+    event: Optional[str] = Field(None, description="event_name")
+
 class ActivityTypeQuery(BaseModel):
-    event_id: Optional[UUID] = Field(None, description = "event id")
+    activity: Optional[UUID] = Field(None, description = "event id")
 
 class ActivityTypeForm(BaseModel):
     name: Optional[str] = Field(None, description="name")
@@ -222,5 +225,13 @@ class AdminQuery(BaseModel):
     username: Optional[str] = Field(None, description="Username")
     password: Optional[str] = Field(None, description="Password")
     
+class MailTemplateForm(BaseModel):
+    name: str = Field(None, description = "name")
 
-
+class EmailTemplateForm(BaseModel):
+    email_templates_external_id: Optional[List[UUID]]= Field(None, description = "email template external id")
+    activities_external_id: Optional[List[UUID]]= Field(None, description = "activity external id")
+    companies_external_id: Optional[List[UUID]]= Field(None, description = "company external id")
+    speakers_external_id: Optional[List[UUID]]= Field(None, description = "speaker external id")
+    send: Optional[str] = Field(None, description = "send email")
+    preview: Optional[str] = Field(None, description = "send email")
