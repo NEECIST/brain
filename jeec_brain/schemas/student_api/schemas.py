@@ -230,10 +230,21 @@ class JeecpotRewards(BaseModel):
     cv_platform_raffle_reward: Dict[str,Rewards] = Field(None, description="Jeecpot CV platform raffle reward")
     cv_platform_raffle_winner: bool = Field(None, description="Jeecpot CV platform raffle winner")
     
-class LootboxReward(BaseModel):
-    reward: Dict[str,Rewards] = Field(None, description="Lootbox reward")
-    type: str = Field(None, description="Lootbox reward type")
-    winner: bool = Field(None, description="Lootbox reward if winner")
+class LootboxRewards(BaseModel):
+    reward: List[Dict[str,Rewards]] = Field(None, description="Lootbox reward")
     
-class LootboxRewardList(BaseModel):
-    list: Dict[str,LootboxReward] = Field(None, description="Lootbox reward list")
+class Lootboxes(BaseModel):
+    name: str = Field(None, description="Lootbox name")
+    rewards: List[Dict[str,LootboxRewards]] = Field(None, description="Lootbox reward list")
+    icon: str = Field(None, description="Lootbox image")
+    
+class StudentLootboxes(BaseModel):
+    lootbox: str = Field(None, description="Lootbox name")
+    opened: bool = Field(None, description="If Lootbox opened")
+    reward: str = Field(None, description="Reward name")
+    icon: str = Field(None, description="Lootbox image")
+    
+class LootboxList(BaseModel):
+    lootboxes: List[Dict[str,Lootboxes]] = Field(None, description="Lootbox reward list")
+    student_lootboxes: List[Dict[str,StudentLootboxes]] = Field(None, description="Student Lootbox list")
+    

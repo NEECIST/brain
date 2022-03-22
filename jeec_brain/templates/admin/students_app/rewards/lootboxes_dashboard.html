@@ -65,6 +65,10 @@
       <button class="waves-effect blue lighten-2 btn add-btn right"><i
           class="material-icons left">add</i>Lootbox</button>
     </form>
+    <form action="/admin/lootbox/winners" method="get">
+      <button class="waves-effect lighten-2 btn add-btn right"><i
+          class="material-icons left">assessment</i>Lootbox Statistics</button>
+    </form>
     <br><br>
     {% endif %}
 
@@ -73,7 +77,7 @@
         <tr>
           <th>Lootbox</th>
           <th>Icon</th>
-          <th>Quantity</th>
+          <th>Reward amount</th>
           <th>Delivered</th>
           <th>Opened</th>
           <th>Active</th>
@@ -122,12 +126,6 @@
           </td>
 
           {% if current_user.role.name == 'admin' %}
-          <td>
-            <form action="/admin/lootbox/{{lootbox.external_id}}/winners" method="get">
-              <button title="Lootbox winner list" class="waves-effect waves-light btn-floating blue"><i
-                  class="material-icons left">assessment</i>Lootbox Statistics</button>
-            </form>
-          </td>
           <td>
             <form action="/admin/lootbox/{{lootbox.external_id}}" method="get">
               <button title="Edit Lootbox" class="waves-effect waves-light btn-floating"><i

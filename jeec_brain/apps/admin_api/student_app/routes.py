@@ -1,4 +1,3 @@
-from jeec_brain.handlers.lootbox_handler import LootboxHandler
 from .. import bp
 from flask import render_template, current_app, request, redirect, url_for, jsonify
 from jeec_brain.values.api_error_value import APIErrorValue
@@ -9,6 +8,7 @@ from jeec_brain.finders.tags_finder import TagsFinder
 from jeec_brain.finders.rewards_finder import RewardsFinder
 from jeec_brain.finders.events_finder import EventsFinder
 from jeec_brain.finders.lootbox_finder import LootboxFinder
+from jeec_brain.handlers.lootbox_handler import LootboxHandler
 from jeec_brain.handlers.lootbox_rewards_handler import LootboxRewardsHandler
 from jeec_brain.handlers.students_handler import StudentsHandler
 from jeec_brain.handlers.squads_handler import SquadsHandler
@@ -22,6 +22,7 @@ from jeec_brain.schemas.admin_api.student_app.schemas import *
 from flask_login import current_user
 from datetime import datetime
 from random import choice
+from uuid import UUID
 
 # Student App routes
 @bp.get('/students-app')
@@ -532,6 +533,7 @@ def lootboxes_dashboard():
     for lootbox in lootboxes:
         lootbox_icons.append(LootboxHandler.find_image(str(lootbox.external_id)))
         rewards = LootboxFinder.get_rewards_from_lootbox(lootbox)
+        student_lootboxes = LootboxFinder.get_student_lootboxes_from_lootbox(lootbox)
         count = len(rewards)
         lootbox_counts.append(count)
         lootbox_percentages.append(0)
@@ -540,6 +542,12 @@ def lootboxes_dashboard():
         if count != 0:
             for reward in rewards:
                 lootbox_percentages[-1] += reward.probability
+        
+        for student_lootbox in student_lootboxes:
+            lootbox_delivered[-1] += 1
+            if student_lootbox.opened:
+                lootbox_opened[-1] += 1
+            
         
     return render_template('admin/students_app/rewards/lootboxes_dashboard.html', error=None, lootboxes=zip(lootboxes,lootbox_counts,lootbox_icons,lootbox_percentages,lootbox_delivered,lootbox_opened), current_user=current_user)
 
@@ -679,6 +687,7 @@ def update_lootbox(path:LootboxPath):
                 for lootbox in lootboxes:
                     lootbox_icons.append(LootboxHandler.find_image(str(lootbox.external_id)))
                     rewards = LootboxFinder.get_rewards_from_lootbox(lootbox)
+                    student_lootboxes = LootboxFinder.get_student_lootboxes_from_lootbox(lootbox)
                     count = len(rewards)
                     lootbox_counts.append(count)
                     lootbox_percentages.append(0)
@@ -687,6 +696,11 @@ def update_lootbox(path:LootboxPath):
                     if count != 0:
                         for reward in rewards:
                             lootbox_percentages[-1] += reward.probability
+                    
+                    for student_lootbox in student_lootboxes:
+                        lootbox_delivered[-1] += 1
+                        if student_lootbox.opened:
+                            lootbox_opened[-1] += 1
                     
                 return render_template('admin/students_app/rewards/lootboxes_dashboard.html', error="Error uploading new Icon image!", lootboxes=zip(lootboxes,lootbox_counts,lootbox_icons,lootbox_percentages,lootbox_delivered,lootbox_opened), current_user=current_user)
             
@@ -706,6 +720,7 @@ def update_lootbox(path:LootboxPath):
                 for lootbox in lootboxes:
                     lootbox_icons.append(LootboxHandler.find_image(str(lootbox.external_id)))
                     rewards = LootboxFinder.get_rewards_from_lootbox(lootbox)
+                    student_lootboxes = LootboxFinder.get_student_lootboxes_from_lootbox(lootbox)
                     count = len(rewards)
                     lootbox_counts.append(count)
                     lootbox_percentages.append(0)
@@ -714,6 +729,11 @@ def update_lootbox(path:LootboxPath):
                     if count != 0:
                         for reward in rewards:
                             lootbox_percentages[-1] += reward.probability
+                    
+                    for student_lootbox in student_lootboxes:
+                        lootbox_delivered[-1] += 1
+                        if student_lootbox.opened:
+                            lootbox_opened[-1] += 1
                     
                 return render_template('admin/students_app/rewards/lootboxes_dashboard.html', error="Error uploading new mobile Icon image!", lootboxes=zip(lootboxes,lootbox_counts,lootbox_icons,lootbox_percentages,lootbox_delivered,lootbox_opened), current_user=current_user)
 
@@ -759,11 +779,64 @@ def delete_lootbox_reward(path:LootboxPath):
     return redirect(url_for('admin_api.update_lootbox_dashboard', lootbox_external_id = lootbox.external_id))
 
 
-@bp.get('/lootbox/<string:lootbox_external_id>/winners')
+@bp.get('/lootbox/winners')
 @allowed_roles(['admin'])
-def winners_lootbox(path:LootboxPath):
+def winners_lootbox():
     
-    return jsonify({"msg":"agora é meter aqui a tabela coma info toda do lootbox_student"})
+    student_lootboxes = LootboxFinder.get_all_student_lootbox_with_names()
+    lootboxes = LootboxFinder.get_all_lootbox()
+    rewards = RewardsFinder.get_all_rewards()
+    students = StudentsFinder.get_all()
+    
+    return render_template('admin/students_app/rewards/lootbox_winners_dashboard.html', error=None, 
+                           student_lootboxes=student_lootboxes, lootboxes=lootboxes, rewards=rewards, students=students)
+
+@bp.post('/lootbox/winners')
+@allowed_roles(['admin'])
+def winners_lootbox_filters():
+    
+    order = request.form.get('ordering', None)
+    filter_lootbox = request.form.get('filter_lootbox', None)
+    filter_student = request.form.get('filter_student', None)
+    filter_reward = request.form.get('filter_reward', None)
+    
+    ordering = "Lootboxes.name asc"
+    if order == "lootbox_asc":
+        ordering = "Lootboxes.name asc"
+    elif order == "lootbox_des":
+        ordering = "Lootboxes.name desc"
+    elif order == "winner_asc":
+        ordering = "Users.name asc"
+    elif order == "winner_des":
+        ordering = "Users.name desc"
+    elif order == "reward_asc":
+        ordering = "Rewards.name asc"
+    elif order == "reward_des":
+        ordering = "Rewards.name desc"
+        
+    filters = ""
+    if filter_lootbox:
+        filters += (f"Lootboxes.external_id='{filter_lootbox}'")
+        filter_lootbox = UUID(filter_lootbox)
+    if filter_student:
+        if filters:
+            filters += " and "
+        filters += (f"Students.external_id='{filter_student}'")
+        filter_student = UUID(filter_student)
+    if filter_reward:
+        if filters:
+            filters += " and "
+        filters += (f"Rewards.external_id='{filter_reward}'")
+        filter_reward = UUID(filter_reward)
+    
+    student_lootboxes = LootboxFinder.get_all_student_lootbox_with_names_from_parameters(order=ordering, filters=filters)
+    lootboxes = LootboxFinder.get_all_lootbox()
+    rewards = RewardsFinder.get_all_rewards()
+    students = StudentsFinder.get_all()
+    
+    return render_template('admin/students_app/rewards/lootbox_winners_dashboard.html', error=None, 
+                           student_lootboxes=student_lootboxes, lootboxes=lootboxes, rewards=rewards, students=students,
+                           order=order, f_lootbox=filter_lootbox, f_student=filter_student, f_reward=filter_reward)
 
 
 @bp.get('/squad-rewards')

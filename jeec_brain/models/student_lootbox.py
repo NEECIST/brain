@@ -12,6 +12,9 @@ class StudentLootbox(db.Model, ModelMixin):
     
     winner_id = db.Column(db.Integer, db.ForeignKey('students.id', ondelete='SET NULL'), nullable = False)
     winner = relationship('Students')
+    
+    reward_id = db.Column(db.Integer, db.ForeignKey('rewards.id', ondelete='SET NULL'))
+    reward = relationship('Rewards')
 
     opened = db.Column(db.Boolean, nullable = False, default = False)
 

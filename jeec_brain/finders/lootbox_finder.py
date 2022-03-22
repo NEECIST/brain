@@ -1,7 +1,10 @@
-from sqlalchemy import and_, func
+from sqlalchemy import text
 from jeec_brain.models.lootbox import Lootboxes
 from jeec_brain.models.lootbox_rewards import LootboxRewards
+from jeec_brain.models.rewards import Rewards
 from jeec_brain.models.student_lootbox import StudentLootbox
+from jeec_brain.models.students import Students
+from jeec_brain.models.users import Users
 
 class LootboxFinder():
         
@@ -28,10 +31,47 @@ class LootboxFinder():
     @classmethod
     def get_all_student_lootbox(cls):
         return StudentLootbox.query.order_by(StudentLootbox.lootbox_id).all()
+    
+    @classmethod
+    def get_all_student_lootbox_with_names(cls):
+        return StudentLootbox.query.join(Lootboxes, (Lootboxes.id == StudentLootbox.lootbox_id)) \
+            .join(Students, (Students.id == StudentLootbox.winner_id)) \
+            .join(Users, (Students.user_id == Users.id)) \
+            .outerjoin(Rewards, (Rewards.id == StudentLootbox.reward_id)) \
+            .order_by(Lootboxes.name) \
+            .with_entities(Users.name.label("student"), StudentLootbox.opened.label("opened"),
+                           Lootboxes.name.label("lootbox"), Rewards.name.label("reward")).all()
+    
+    @classmethod
+    def get_all_student_lootbox_with_names_by_student_id_with_icon(cls, student_id):
+        return StudentLootbox.query.join(Lootboxes, (Lootboxes.id == StudentLootbox.lootbox_id)) \
+            .join(Students, (Students.id == StudentLootbox.winner_id)) \
+            .join(Users, (Students.user_id == Users.id)) \
+            .outerjoin(Rewards, (Rewards.id == StudentLootbox.reward_id)) \
+            .order_by(StudentLootbox.opened, Lootboxes.name) \
+            .filter(Students.id == student_id) \
+            .with_entities(Users.name.label("student"), StudentLootbox.opened.label("opened"),
+                           Lootboxes.name.label("lootbox"), Rewards.name.label("reward"),
+                           Lootboxes.external_id.label("icon")).all()
+            
+    @classmethod
+    def get_all_student_lootbox_with_names_from_parameters(cls, order, filters):
+        return StudentLootbox.query.join(Lootboxes, (Lootboxes.id == StudentLootbox.lootbox_id)) \
+            .join(Students, (Students.id == StudentLootbox.winner_id)) \
+            .join(Users, (Students.user_id == Users.id)) \
+            .outerjoin(Rewards, (Rewards.id == StudentLootbox.reward_id)) \
+            .order_by(text(order)) \
+            .filter(text(filters)) \
+            .with_entities(Users.name.label("student"), StudentLootbox.opened.label("opened"),
+                           Lootboxes.name.label("lootbox"), Rewards.name.label("reward")).all()
             
     @classmethod
     def get_rewards_from_lootbox(cls, lootbox):
         return LootboxRewards.query.filter_by(lootbox_id=lootbox.id).order_by(LootboxRewards.probability).all()
+    
+    @classmethod
+    def get_student_lootboxes_from_lootbox(cls, lootbox):
+        return StudentLootbox.query.filter_by(lootbox_id=lootbox.id).order_by(StudentLootbox.id).all()
 
     @classmethod
     def get_lootbox_from_parameters(cls, kwargs):
